@@ -1,0 +1,41 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    name: Build RPMs and publish GitHub Release
+    runs-on: ubuntu-latest
+    container: fedora:latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Install build dependencies
+        run: dnf install -y glib2-devel cmake rpm-build git
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build library
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -- -j$(nproc)
+
+      - name: Package RPMs
+        run: |
+          cd build
+          cpack -G RPM
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: build/*.rpm

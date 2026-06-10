@@ -1,0 +1,25 @@
+# Build directory
+build/
+
+# CMake artefacts
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CPackConfig.cmake
+CPackSourceConfig.cmake
+install_manifest*.txt
+Makefile
+
+# Compiled objects
+*.o
+*.a
+*.so
+*.so.*
+
+# pkg-config generated
+*.pc
+
+# Editor
+*.swp
+*~
+.DS_Store
