@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* include/Erreur.h      Déclaration des prototypes de gestion de log — abls-habitat-libs                                     */
-/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                                10.06.2026          */
+/* Projet Abls-Habitat version 1.0       Gestion d'habitat                                                10.06.2026          */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -39,7 +39,6 @@
 
 /*-- Initialisation / arrêt --------------------------------------------------*/
  extern void Info_init             ( const gchar *ident, guint log_level );
- extern void Info_stop             ( void );
  extern void Info_change_log_level ( guint new_log_level );
 
 /*-- Logging principal -------------------------------------------------------*/
@@ -53,9 +52,9 @@
  extern gint Info_reset_nbr_log ( void );
 
 /*-- Forçage debug par contexte ----------------------------------------------*/
- extern void Info_force_debug       ( const gchar *context );
- extern void Info_unforce_debug     ( const gchar *context );
- extern void Info_clear_forced_debug( void );
+ extern void Info_debug_context        ( const gchar *context );
+ extern void Info_undebug_context      ( const gchar *context );
+ extern void Info_clear_debug_contexts ( void );
 
 #endif /* _ERREUR_H_ */
 /*----------------------------------------------------------------------------------------------------------------------------*/
