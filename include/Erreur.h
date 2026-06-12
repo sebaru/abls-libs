@@ -37,18 +37,17 @@
  #include <sys/prctl.h>
  #include <stdarg.h>
 
-/*-- Initialisation / arrêt --------------------------------------------------*/
- extern void Info_init             ( const gchar *ident, guint log_level );
+/*-- Initialisation / arrêt --------------------------------------------------------------------------------------------------*/
+ extern void Info_init             ( const gchar *entete, const gchar *perimeter_name, guint log_level );
  extern void Info_change_log_level ( guint new_log_level );
 
-/*-- Logging principal -------------------------------------------------------*/
+/*-- Logging principal -------------------------------------------------------------------------------------------------------*/
  extern void Info_new ( const gchar *function,
                         const gchar *context,
                         guint        priority,
-                        const gchar *domain_uuid,
                         const gchar *format, ... );
 
-/*-- Compteur de messages ----------------------------------------------------*/
+/*-- Compteur de messages ----------------------------------------------------------------------------------------------------*/
  extern gint Info_reset_nbr_log ( void );
 
 /*-- Forçage debug par contexte ----------------------------------------------*/
