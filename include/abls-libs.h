@@ -1,10 +1,10 @@
 /******************************************************************************************************************************/
-/* include/abls-habitat-libs.h   Header parapluie — abls-habitat-libs                                                        */
+/* include/abls-libs.h   Header parapluie — abls-libs                                                                         */
 /* Projet Abls-Habitat version 4.7       Gestion d'habitat                                                10.06.2026          */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
- * abls-habitat-libs.h
+ * abls-libs.h
  * This file is part of Abls-Habitat
  *
  * Copyright (C) 1988-2026 - Sébastien LEFÈVRE
@@ -25,10 +25,11 @@
  * Boston, MA  02110-1301  USA
  */
 
-#ifndef _ABLS_HABITAT_LIBS_H_
- #define _ABLS_HABITAT_LIBS_H_
+#ifndef _ABLS_LIBS_H_
+ #define _ABLS_LIBS_H_
 
- #include "Erreur.h"
+ #include "Info.h"
+ #include "Lifo.h"
 
-#endif /* _ABLS_HABITAT_LIBS_H_ */
+#endif /* _ABLS_LIBS_H_ */
 /*----------------------------------------------------------------------------------------------------------------------------*/

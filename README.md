@@ -1,4 +1,4 @@
-# abls-habitat-libs
+# abls-libs
 
 Shared C library for the Abls-Habitat project, providing a unified structured logging system used by `abls-habitat-api` and `Watchdogd`.
 
@@ -44,10 +44,10 @@ sudo ./install.sh
 cd build && cpack -G RPM
 ```
 
-Produces `abls-habitat-libs-X.Y.Z-1.rpm` (runtime) and `abls-habitat-libs-devel-X.Y.Z-1.rpm` (headers + pkg-config).
+Produces `abls-libs-X.Y.Z-1.rpm` (runtime) and `abls-libs-devel-X.Y.Z-1.rpm` (headers + pkg-config).
 
 ## Install from GitHub Release
 
 ```sh
-dnf install https://github.com/sebaru/abls-habitat-libs/releases/download/v1.0-0/abls-habitat-libs-devel-1.0.0-1.rpm
+dnf install https://github.com/sebaru/abls-libs/releases/download/v1.0-0/abls-libs-devel-1.0.0-1.rpm
 ```

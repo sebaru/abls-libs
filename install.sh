@@ -1,5 +1,5 @@
 #!/bin/bash
-# install.sh — Installe abls-habitat-libs sur le système
+# install.sh — Installe abls-libs sur le système
 set -e
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
