@@ -28,8 +28,7 @@
 #ifndef _ABLS_LIBS_H_
  #define _ABLS_LIBS_H_
 
- #include "Info.h"
- #include "Lifo.h"
+ #include "info.h"
 
 #endif /* _ABLS_LIBS_H_ */
 /*----------------------------------------------------------------------------------------------------------------------------*/

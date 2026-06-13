@@ -37,14 +37,13 @@ pkg_check_modules(GTHREAD REQUIRED gthread-2.0)
 # Librairie partagée
 ##################################################################################################################################
 add_library(abls-libs SHARED
-  src/Info.c
-  src/Lifo.c
+  src/info.c
 )
 
 set_target_properties(abls-libs PROPERTIES
   VERSION   ${PROJECT_VERSION}
   SOVERSION ${PROJECT_VERSION_MAJOR}
-  PUBLIC_HEADER "include/Info.h;include/Lifo.h;include/abls-libs.h"
+  PUBLIC_HEADER "include/info.h;include/abls-libs.h"
 )
 
 target_include_directories(abls-libs

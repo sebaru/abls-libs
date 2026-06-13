@@ -5,23 +5,22 @@ Shared C library for the Abls-Habitat project, providing a unified structured lo
 ## Features
 
 - Structured JSON logging to syslog
-- Per-context debug forcing via `Info_force_debug()`
+- Per-context debug forcing via `abls_info_debug_context()`
 - Thread-safe (GLib atomics + GMutex)
-- Log message rate counter (`Info_reset_nbr_log`)
+- Log message rate counter (`abls_info_reset_nbr_log`)
 - pkg-config integration
 
 ## API
 
 ```c
-void Info_init           (const gchar *ident, guint log_level);
-void Info_new            (const gchar *function, const gchar *context, guint priority,
-                          const gchar *domain_uuid, const gchar *format, ...);
-void Info_change_log_level(guint new_log_level);
-void Info_stop           (void);
-gint Info_reset_nbr_log  (void);
-void Info_force_debug    (const gchar *context);
-void Info_unforce_debug  (const gchar *context);
-void Info_clear_forced_debug(void);
+void abls_info_init             (const gchar *ident, const gchar *perimeter_name, guint log_level);
+void abls_info_new              (const gchar *function, const gchar *context, guint priority,
+                                 const gchar *format, ...);
+void abls_info_change_log_level (guint new_log_level);
+gint abls_info_reset_nbr_log    (void);
+void abls_info_debug_context    (const gchar *context);
+void abls_info_undebug_context  (const gchar *context);
+void abls_info_clear_debug_contexts (void);
 ```
 
 ## JSON log format
