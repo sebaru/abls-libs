@@ -32,18 +32,20 @@ find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(GLIB    REQUIRED glib-2.0)
 pkg_check_modules(GTHREAD REQUIRED gthread-2.0)
+pkg_check_modules(JSON_GLIB REQUIRED json-glib-1.0)
 
 ##################################################################################################################################
 # Librairie partagée
 ##################################################################################################################################
 add_library(abls-libs SHARED
   src/info.c
+  src/json.c
 )
 
 set_target_properties(abls-libs PROPERTIES
   VERSION   ${PROJECT_VERSION}
   SOVERSION ${PROJECT_VERSION_MAJOR}
-  PUBLIC_HEADER "include/info.h;include/abls-libs.h"
+  PUBLIC_HEADER "include/info.h;include/json.h;include/abls-libs.h"
 )
 
 target_include_directories(abls-libs
@@ -53,6 +55,7 @@ target_include_directories(abls-libs
   PRIVATE
     ${GLIB_INCLUDE_DIRS}
     ${GTHREAD_INCLUDE_DIRS}
+    ${JSON_GLIB_INCLUDE_DIRS}
 )
 
 target_compile_options(abls-libs PRIVATE
@@ -62,6 +65,7 @@ target_compile_options(abls-libs PRIVATE
 target_link_libraries(abls-libs PRIVATE
   ${GLIB_LIBRARIES}
   ${GTHREAD_LIBRARIES}
+  ${JSON_GLIB_LIBRARIES}
 )
 
 ##################################################################################################################################
@@ -103,14 +107,14 @@ set(CPACK_COMPONENTS_ALL      runtime devel)
 # Package runtime
 set(CPACK_RPM_RUNTIME_PACKAGE_NAME    "abls-libs")
 set(CPACK_RPM_RUNTIME_PACKAGE_SUMMARY "Abls-Habitat shared library (runtime)")
-set(CPACK_RPM_RUNTIME_PACKAGE_REQUIRES "glib2")
+set(CPACK_RPM_RUNTIME_PACKAGE_REQUIRES "glib2, json-glib")
 set(CPACK_RPM_RUNTIME_FILE_NAME
   "abls-libs-${PROJECT_VERSION}-${CPACK_PACKAGE_RELEASE}.rpm")
 
 # Package devel
 set(CPACK_RPM_DEVEL_PACKAGE_NAME    "abls-libs-devel")
 set(CPACK_RPM_DEVEL_PACKAGE_SUMMARY "Abls-Habitat shared library (development files)")
-set(CPACK_RPM_DEVEL_PACKAGE_REQUIRES "abls-libs = ${PROJECT_VERSION}, glib2-devel")
+set(CPACK_RPM_DEVEL_PACKAGE_REQUIRES "abls-libs = ${PROJECT_VERSION}, glib2-devel, json-glib-devel")
 set(CPACK_RPM_DEVEL_FILE_NAME
   "abls-libs-devel-${PROJECT_VERSION}-${CPACK_PACKAGE_RELEASE}.rpm")
 
