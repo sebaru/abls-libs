@@ -85,26 +85,26 @@
            { GType valueType = json_node_get_value_type( ObjectMemberNode );                       /* Selon le type de valeur */
              switch (valueType)
               { case G_TYPE_INT64:
-                  { abls_info_with_prefix ( __func__, log_facility, log_prefix, LOG_INFO, "%s = '%" G_GINT64_FORMAT "'", name, json_node_get_int(ObjectMemberNode) );
+                  { Info_with_prefix ( __func__, log_facility, log_prefix, LOG_INFO, "%s = '%" G_GINT64_FORMAT "'", name, json_node_get_int(ObjectMemberNode) );
                     break;
                   }
                 case G_TYPE_DOUBLE:
-                  { abls_info_with_prefix ( __func__, log_facility, log_prefix, LOG_INFO, "%s = '%f'", name, json_node_get_double(ObjectMemberNode) );
+                  { Info_with_prefix ( __func__, log_facility, log_prefix, LOG_INFO, "%s = '%f'", name, json_node_get_double(ObjectMemberNode) );
                     break;
                   }
                 case G_TYPE_BOOLEAN:
-                  { abls_info_with_prefix ( __func__, log_facility, log_prefix, LOG_INFO, "%s = '%s'", name, ( json_node_get_boolean(ObjectMemberNode) ? "true" : "false") );
+                  { Info_with_prefix ( __func__, log_facility, log_prefix, LOG_INFO, "%s = '%s'", name, ( json_node_get_boolean(ObjectMemberNode) ? "true" : "false") );
                     break;
                   }
                 case G_TYPE_STRING:
                   { if (g_strrstr ( name, "password" ))
-                     { abls_info_with_prefix ( __func__, log_facility, log_prefix, LOG_INFO, "%s = '******'", name ); }
+                     { Info_with_prefix ( __func__, log_facility, log_prefix, LOG_INFO, "%s = '******'", name ); }
                     else
-                     { abls_info_with_prefix ( __func__, log_facility, log_prefix, LOG_INFO, "%s = '%s'", name, json_node_get_string(ObjectMemberNode) ); }
+                     { Info_with_prefix ( __func__, log_facility, log_prefix, LOG_INFO, "%s = '%s'", name, json_node_get_string(ObjectMemberNode) ); }
                   }
                   break;
                 default:
-                  { abls_info_with_prefix ( __func__, log_facility, log_prefix, LOG_INFO, "%s = 'unknown value type'", name ); }
+                  { Info_with_prefix ( __func__, log_facility, log_prefix, LOG_INFO, "%s = 'unknown value type'", name ); }
               }
            }
         }
@@ -252,7 +252,7 @@
 /******************************************************************************************************************************/
  gchar *Json_get_string ( JsonNode *RootNode, gchar *chaine )
   { JsonObject *object = json_node_get_object (RootNode);
-    if (!object) { abls_info ( __func__, "json", LOG_ERR, "Object is null for '%s'", chaine );  return(NULL); }
+    if (!object) { Info ( __func__, "json", LOG_ERR, "Object is null for '%s'", chaine );  return(NULL); }
     return((gchar *)json_object_get_string_member ( object, chaine ));
   }
 /******************************************************************************************************************************/
@@ -262,7 +262,7 @@
 /******************************************************************************************************************************/
  gdouble Json_get_double ( JsonNode *RootNode, gchar *chaine )
   { JsonObject *object = json_node_get_object (RootNode);
-    if (!object) { abls_info ( __func__, "json", LOG_ERR, "Object is null for '%s'", chaine );  return(0.0); }
+    if (!object) { Info ( __func__, "json", LOG_ERR, "Object is null for '%s'", chaine );  return(0.0); }
     return(json_object_get_double_member ( object, chaine ));
   }
 /******************************************************************************************************************************/
@@ -272,7 +272,7 @@
 /******************************************************************************************************************************/
  gboolean Json_get_bool ( JsonNode *RootNode, gchar *chaine )
   { JsonObject *object = json_node_get_object (RootNode);
-    if (!object) { abls_info ( __func__, "json", LOG_ERR, "Object is null for '%s'", chaine );  return(FALSE); }
+    if (!object) { Info ( __func__, "json", LOG_ERR, "Object is null for '%s'", chaine );  return(FALSE); }
     return(json_object_get_boolean_member ( object, chaine ));
   }
 /******************************************************************************************************************************/
@@ -282,7 +282,7 @@
 /******************************************************************************************************************************/
  gint Json_get_int ( JsonNode *RootNode, gchar *chaine )
   { JsonObject *object = json_node_get_object (RootNode);
-    if (!object) { abls_info ( __func__, "json", LOG_ERR, "Object is null for '%s'", chaine );  return(0); }
+    if (!object) { Info ( __func__, "json", LOG_ERR, "Object is null for '%s'", chaine );  return(0); }
     return(json_object_get_int_member ( object, chaine ));
   }
 /******************************************************************************************************************************/
@@ -292,7 +292,7 @@
 /******************************************************************************************************************************/
  JsonArray *Json_get_array ( JsonNode *RootNode, gchar *chaine )
   { JsonObject *object = json_node_get_object (RootNode);
-    if (!object) { abls_info ( __func__, "json", LOG_ERR, "Object is null for '%s'", chaine );  return(NULL); }
+    if (!object) { Info ( __func__, "json", LOG_ERR, "Object is null for '%s'", chaine );  return(NULL); }
     return(json_object_get_array_member ( object, chaine ));
   }
 /******************************************************************************************************************************/
@@ -302,7 +302,7 @@
 /******************************************************************************************************************************/
  JsonObject *Json_get_object_as_object ( JsonNode *RootNode, gchar *chaine )
   { JsonObject *object = json_node_get_object (RootNode);
-    if (!object) { abls_info ( __func__, "json", LOG_ERR, "Object is null for '%s'", chaine );  return(NULL); }
+    if (!object) { Info ( __func__, "json", LOG_ERR, "Object is null for '%s'", chaine );  return(NULL); }
     return(json_object_get_object_member ( object, chaine ));
   }
 /******************************************************************************************************************************/
@@ -312,7 +312,7 @@
 /******************************************************************************************************************************/
  JsonNode *Json_get_object_as_node ( JsonNode *RootNode, gchar *chaine )
   { JsonObject *object = json_node_get_object (RootNode);
-    if (!object) { abls_info ( __func__, "json", LOG_ERR, "Object is null for '%s'", chaine );  return(NULL); }
+    if (!object) { Info ( __func__, "json", LOG_ERR, "Object is null for '%s'", chaine );  return(NULL); }
     return(json_object_get_member ( object, chaine ));
   }
 /******************************************************************************************************************************/
@@ -323,13 +323,13 @@
  gboolean Json_has_member ( JsonNode *RootNode, gchar *chaine )
   { JsonObject *object = json_node_get_object (RootNode);
     if (!RootNode)
-     { abls_info ( __func__, "json", LOG_ERR, "RootNode is null for '%s'", chaine );  return(FALSE); }
+     { Info ( __func__, "json", LOG_ERR, "RootNode is null for '%s'", chaine );  return(FALSE); }
     if (!object)
-     { abls_info ( __func__, "json", LOG_ERR, "Object is null for '%s'", chaine );  return(FALSE); }
+     { Info ( __func__, "json", LOG_ERR, "Object is null for '%s'", chaine );  return(FALSE); }
     if (!json_object_has_member ( object, chaine ))
-     { abls_info ( __func__, "json", LOG_DEBUG, "%s is missing", chaine ); return(FALSE); }
+     { Info ( __func__, "json", LOG_DEBUG, "%s is missing", chaine ); return(FALSE); }
     if (json_object_get_null_member ( object, chaine ))
-     { abls_info ( __func__, "json", LOG_DEBUG, "%s is null", chaine ); return(FALSE); }
+     { Info ( __func__, "json", LOG_DEBUG, "%s is null", chaine ); return(FALSE); }
     return( TRUE );
   }
 /******************************************************************************************************************************/
@@ -347,14 +347,14 @@
 
     gint fd = open ( filename, O_RDONLY );
     if (fd < 0)
-     { abls_info ( __func__, "json", LOG_ERR, "Unable to open json file %s: %s", filename, strerror(errno) );
+     { Info ( __func__, "json", LOG_ERR, "Unable to open json file %s: %s", filename, strerror(errno) );
        goto end;
      }
 
     if (read ( fd, content, stat_buf.st_size ) == stat_buf.st_size)
      { node = Json_get_from_string ( content );
-       if (!node) abls_info ( __func__, "json", LOG_ERR, "Unable to parse: file %s is not JSON", filename );
-     } else abls_info ( __func__, "json", LOG_ERR, "Unable to read json file %s: %s", filename, strerror(errno) );
+       if (!node) Info ( __func__, "json", LOG_ERR, "Unable to parse: file %s is not JSON", filename );
+     } else Info ( __func__, "json", LOG_ERR, "Unable to read json file %s: %s", filename, strerror(errno) );
     close(fd);
 end:
     g_free(content);
@@ -369,21 +369,21 @@ end:
   { unlink ( filename );
     gint fd = creat ( filename, S_IWUSR | S_IRUSR );
     if (fd < 0)
-     { abls_info ( __func__, "json", LOG_ERR, "Create '%s' failed: %s", filename, strerror(errno) );
+     { Info ( __func__, "json", LOG_ERR, "Create '%s' failed: %s", filename, strerror(errno) );
        return(FALSE);
      }
 
     gchar *buf = Json_to_string ( RootNode );
     if (!buf)
      { close(fd);
-       abls_info ( __func__, "json", LOG_ERR, "Json to Buf failed, writing to '%s'", filename );
+       Info ( __func__, "json", LOG_ERR, "Json to Buf failed, writing to '%s'", filename );
        return(FALSE);
      }
 
     gint taille = strlen(buf);
     gboolean retour = TRUE;
     if (write ( fd, buf, taille ) != taille)
-     { abls_info ( __func__, "json", LOG_ERR, "Error writing %d bytes to '%s': %s", taille, filename, strerror(errno) );
+     { Info ( __func__, "json", LOG_ERR, "Error writing %d bytes to '%s': %s", taille, filename, strerror(errno) );
        retour = FALSE;
      }
 
@@ -407,7 +407,7 @@ end:
   { const char *name;
     JsonObjectIter iter;
     JsonNode *ObjectMemberNode;
-    abls_info ( __func__, "config", LOG_NOTICE, "Trying to read config file '%s'", filename );
+    Info ( __func__, "config", LOG_NOTICE, "Trying to read config file '%s'", filename );
     JsonNode *from_file = Json_read_from_file ( filename );
     if (from_file)                                                              /* Copy des elements de from_file vers target */
      { JsonObject *fromFileObject = json_node_get_object(from_file);                        /* Récupération de l'objet source */
@@ -415,9 +415,9 @@ end:
        while (json_object_iter_next(&iter, &name, &ObjectMemberNode))
         { Json_copy_member_into ( from_file, name, target ); }
        Json_unref( from_file );
-     } else abls_info ( __func__, "config", LOG_WARNING, "Unable to read file config '%s'", filename );
+     } else Info ( __func__, "config", LOG_WARNING, "Unable to read file config '%s'", filename );
 
-    abls_info ( __func__, "config", LOG_NOTICE, "Apply ENVironment Variables" );
+    Info ( __func__, "config", LOG_NOTICE, "Apply ENVironment Variables" );
     gchar **env_vars = g_listenv();                                       /* Récupérer la liste des variables d'environnement */
     for (gchar **env = env_vars; *env != NULL; env++)                                       /* Parcourir toutes les variables */
      { gchar *prefixe = "ABLS_";
@@ -425,7 +425,7 @@ end:
         { const gchar *valeur = g_getenv ( *env );                                                       /* Extrait la valeur */
           if (valeur)
            { gchar *env_name = g_ascii_strdown( *env + strlen(prefixe), -1 );                         /* Passage en lowercase */
-             abls_info ( __func__, "config", LOG_NOTICE, "Apply ENV '%s' -> '%s' = '%s'", *env, env_name, valeur );
+             Info ( __func__, "config", LOG_NOTICE, "Apply ENV '%s' -> '%s' = '%s'", *env, env_name, valeur );
              if ( !strcasecmp ( valeur, "TRUE" ) )
               { Json_add_bool ( target, env_name, TRUE ); }
              else if ( !strcasecmp ( valeur, "FALSE" ) )

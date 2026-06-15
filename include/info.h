@@ -38,29 +38,29 @@
  #include <stdarg.h>
 
 /*-- Initialisation / arret --------------------------------------------------------------------------------------------------*/
- extern void abls_info_init             ( const gchar *entete, const gchar *prefixe_name, guint log_level );
- extern void abls_info_change_log_level ( guint new_log_level );
+ extern void Info_init             ( const gchar *entete, const gchar *prefixe_name, guint log_level );
+ extern void Info_change_log_level ( guint new_log_level );
 
 /*-- Logging with prefixe ----------------------------------------------------------------------------------------------------*/
- extern void abls_info ( const gchar *function,
-                         const gchar *facility,
+ extern void Info ( const gchar *function,
+                    const gchar *facility,
                          guint        priority,
                          const gchar *format, ... );
 
 /*-- Logging with prefixe ----------------------------------------------------------------------------------------------------*/
- extern void abls_info_with_prefix ( const gchar *function,
-                                     const gchar *facility,
-                                     const gchar *prefixe,
-                                     guint        priority,
-                                     const gchar *format, ... );
+ extern void Info_with_prefix ( const gchar *function,
+                                const gchar *facility,
+                                const gchar *prefixe,
+                                guint        priority,
+                                const gchar *format, ... );
 
-                                     /*-- Compteur de messages ----------------------------------------------------------------------------------------------------*/
- extern gint abls_info_reset_nbr_log ( void );
+/*-- Compteur de messages ----------------------------------------------------------------------------------------------------*/
+ extern gint Info_reset_nbr_log ( void );
 
 /*-- Forcage debug par contexte ----------------------------------------------------------------------------------------------*/
- extern void abls_info_debug_facility        ( const gchar *prefixe, const gchar *context );
- extern void abls_info_undebug_facility      ( const gchar *prefixe, const gchar *context );
- extern void abls_info_clear_debug_facilities ( void );
+ extern void Info_debug_facility        ( const gchar *prefixe, const gchar *context );
+ extern void Info_undebug_facility      ( const gchar *prefixe, const gchar *context );
+ extern void Info_clear_debug_facilities ( void );
 
 #endif /* _ABLS_INFO_H_ */
 /*----------------------------------------------------------------------------------------------------------------------------*/
