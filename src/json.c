@@ -187,13 +187,42 @@
  void Json_array_add_element ( JsonArray *array, JsonNode *element )
   { json_array_add_element ( array, element ); }
 /******************************************************************************************************************************/
-/* Json_add_array_element: Ajoute un enregistrement dans le tableau nommé en paramètre                                        */
+/* Json_array_add_one_element: Ajoute un enregistrement dans le tableau nommé en paramètre                                    */
 /* Entrée: le RootNode, le nom du parametre, la valeur                                                                        */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Json_add_array_element ( JsonNode *RootNode, gchar *array_name, JsonNode *element )
+ void Json_array_add_one_element ( JsonNode *RootNode, gchar *array_name, JsonNode *element )
   { JsonArray *tableau = Json_get_array ( RootNode, array_name );
     if (tableau) json_array_add_element ( tableau, element );
+  }
+/******************************************************************************************************************************/
+/* Json_array_del_one_element: Supprime un enregistrement dans le tableau nommé en paramètre                                  */
+/* Entrée: le RootNode, le nom du parametre, l'index de l'élément à supprimer                                                 */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void Json_array_del_one_element ( JsonNode *RootNode, gchar *array_name, guint index )
+  { JsonArray *tableau = Json_get_array ( RootNode, array_name );
+    if (tableau) json_array_remove_element ( tableau, index );
+  }
+/******************************************************************************************************************************/
+/* Json_array_get_element: Recupere un element du tableau nommé en paramètre                                                 */
+/* Entrée: le RootNode, le nom du tableau, l'index                                                                           */
+/* Sortie: le JsonNode demandé ou NULL                                                                                       */
+/******************************************************************************************************************************/
+ JsonNode *Json_array_get_element ( JsonNode *RootNode, gchar *array_name, guint index )
+  { JsonArray *tableau = Json_get_array ( RootNode, array_name );
+    if (!tableau) return(NULL);
+    return(json_array_get_element ( tableau, index ));
+  }
+/******************************************************************************************************************************/
+/* Json_array_get_length: Recupere la taille du tableau nommé en paramètre                                                   */
+/* Entrée: le RootNode, le nom du tableau                                                                                    */
+/* Sortie: la taille du tableau, 0 si absent                                                                                 */
+/******************************************************************************************************************************/
+ guint Json_array_get_length ( JsonNode *RootNode, gchar *array_name )
+  { JsonArray *tableau = Json_get_array ( RootNode, array_name );
+    if (!tableau) return(0);
+    return(json_array_get_length ( tableau ));
   }
 /******************************************************************************************************************************/
 /* Json_node_foreach_array_element: Lance une fonction en parametre sur chacun des elements d'un tableau                     */
@@ -330,6 +359,37 @@
 end:
     g_free(content);
     return(node);
+  }
+/******************************************************************************************************************************/
+/* Json_write_to_file: Sauvegarde un JsonNode dans un fichier                                                                 */
+/* Entrée: le nom de fichier et le buffer Json                                                                                */
+/* Sortie: FALSE si erreur                                                                                                    */
+/******************************************************************************************************************************/
+ gboolean Json_write_to_file ( gchar *filename, JsonNode *RootNode )
+  { unlink ( filename );
+    gint fd = creat ( filename, S_IWUSR | S_IRUSR );
+    if (fd < 0)
+     { abls_info ( __func__, "json", LOG_ERR, "Create '%s' failed: %s", filename, strerror(errno) );
+       return(FALSE);
+     }
+
+    gchar *buf = Json_to_string ( RootNode );
+    if (!buf)
+     { close(fd);
+       abls_info ( __func__, "json", LOG_ERR, "Json to Buf failed, writing to '%s'", filename );
+       return(FALSE);
+     }
+
+    gint taille = strlen(buf);
+    gboolean retour = TRUE;
+    if (write ( fd, buf, taille ) != taille)
+     { abls_info ( __func__, "json", LOG_ERR, "Error writing %d bytes to '%s': %s", taille, filename, strerror(errno) );
+       retour = FALSE;
+     }
+
+    close(fd);
+    g_free(buf);
+    return(retour);
   }
 /******************************************************************************************************************************/
 /* Json_read_config: Recupere un ficher de config, rempli les manques avec l'environnement, ou applique une valeur par defaut */

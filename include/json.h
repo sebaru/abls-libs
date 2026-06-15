@@ -45,7 +45,10 @@
  extern JsonArray *Json_add_array               ( JsonNode *RootNode, gchar *name );
  extern JsonNode  *Json_add_object              ( JsonNode *RootNode, gchar *name );
  extern void       Json_array_add_element       ( JsonArray *array, JsonNode *element );
- extern void       Json_add_array_element       ( JsonNode *RootNode, gchar *array_name, JsonNode *element );
+ extern void       Json_array_add_one_element   ( JsonNode *RootNode, gchar *array_name, JsonNode *element );
+ extern void       Json_array_del_one_element   ( JsonNode *RootNode, gchar *array_name, guint index );
+ extern JsonNode  *Json_array_get_element       ( JsonNode *RootNode, gchar *array_name, guint index );
+ extern guint      Json_array_get_length        ( JsonNode *RootNode, gchar *array_name );
  extern void       Json_node_foreach_array_element ( JsonNode *RootNode, gchar *array_name,
                                                      JsonArrayForeach fonction, gpointer data );
 
@@ -65,6 +68,7 @@
 
 /*-- Lecture de fichier / configuration --------------------------------------------------------------------------------------*/
  extern JsonNode  *Json_read_from_file          ( gchar *filename );
+ extern gboolean   Json_write_to_file           ( gchar *filename, JsonNode *RootNode );
  extern void       Json_read_config             ( gchar *filename, JsonNode *target );
 
 #endif /* _ABLS_JSON_H_ */
