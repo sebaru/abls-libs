@@ -47,7 +47,7 @@
  extern void       Json_array_add_element       ( JsonArray *array, JsonNode *element );
  extern void       Json_array_add_one_element   ( JsonNode *RootNode, gchar *array_name, JsonNode *element );
  extern void       Json_array_del_one_element   ( JsonNode *RootNode, gchar *array_name, guint index );
- extern JsonNode  *Json_array_get_element       ( JsonNode *RootNode, gchar *array_name, guint index );
+ extern JsonNode  *Json_array_get_element_at    ( JsonNode *RootNode, gchar *array_name, guint index );
  extern guint      Json_array_get_length        ( JsonNode *RootNode, gchar *array_name );
  extern void       Json_foreach_array_element   ( JsonNode *RootNode, gchar *array_name,
                                                   JsonArrayForeach fonction, gpointer data );

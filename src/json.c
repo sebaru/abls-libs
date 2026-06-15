@@ -225,11 +225,11 @@
     return(json_array_get_length ( tableau ));
   }
 /******************************************************************************************************************************/
-/* Json_node_foreach_array_element: Lance une fonction en parametre sur chacun des elements d'un tableau                      */
+/* Json_foreach_array_element: Lance une fonction en parametre sur chacun des elements d'un tableau                           */
 /* Entrée: le RootNode, le nom du parametre, la fonction et les donnees utilisateur                                           */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Json_node_foreach_array_element ( JsonNode *RootNode, gchar *array_name, JsonArrayForeach fonction, gpointer data )
+ void Json_foreach_array_element ( JsonNode *RootNode, gchar *array_name, JsonArrayForeach fonction, gpointer data )
   { json_array_foreach_element ( Json_get_array ( RootNode, array_name ), fonction, data ); }
 /******************************************************************************************************************************/
 /* Json_to_string: transforme un JsonNode en string                                                                           */
