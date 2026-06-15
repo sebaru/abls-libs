@@ -59,7 +59,7 @@ set_target_properties(abls-libs PROPERTIES
 target_include_directories(abls-libs
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/abls-libs>
   PRIVATE
     ${GLIB_INCLUDE_DIRS}
     ${GTHREAD_INCLUDE_DIRS}
@@ -80,12 +80,9 @@ target_link_libraries(abls-libs PRIVATE
 # Installation
 ##################################################################################################################################
 install(TARGETS abls-libs
-  LIBRARY       DESTINATION ${CMAKE_INSTALL_LIBDIR}        COMPONENT runtime
-  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}    COMPONENT devel
+  LIBRARY       DESTINATION ${CMAKE_INSTALL_LIBDIR}             COMPONENT runtime
+  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/abls-libs COMPONENT devel
 )
-
-# ldconfig post-install
-install(CODE "execute_process(COMMAND /sbin/ldconfig)" COMPONENT runtime)
 
 ##################################################################################################################################
 # pkg-config
@@ -116,6 +113,8 @@ set(CPACK_COMPONENTS_ALL      runtime devel)
 set(CPACK_RPM_RUNTIME_PACKAGE_NAME    "abls-libs")
 set(CPACK_RPM_RUNTIME_PACKAGE_SUMMARY "Abls-Habitat shared library (runtime)")
 set(CPACK_RPM_RUNTIME_PACKAGE_REQUIRES "glib2, json-glib")
+set(CPACK_RPM_RUNTIME_POST_INSTALL_SCRIPT_FILE "" )
+set(CPACK_RPM_RUNTIME_POST_SCRIPTLET  "/sbin/ldconfig")
 set(CPACK_RPM_RUNTIME_FILE_NAME
   "abls-libs-${PROJECT_VERSION}-${CPACK_PACKAGE_RELEASE}.rpm")
 

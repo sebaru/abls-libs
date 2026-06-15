@@ -8,4 +8,4 @@ Description: @PROJECT_DESCRIPTION@
 Version: @PROJECT_VERSION@
 Requires: glib-2.0 gthread-2.0 json-glib-1.0
 Libs: -L${libdir} -labls-libs
-Cflags: -I${includedir}
+Cflags: -I${includedir}/abls-libs
