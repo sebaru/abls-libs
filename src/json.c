@@ -392,6 +392,13 @@ end:
     return(retour);
   }
 /******************************************************************************************************************************/
+/* Json_unref: Libère un JsonNode                                                                                             */
+/* Entrée: le JsonNode à libérer                                                                                              */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+  void Json_unref ( JsonNode *RootNode )
+  { if (RootNode) json_node_unref ( RootNode ); }
+/******************************************************************************************************************************/
 /* Json_read_config: Recupere un ficher de config, rempli les manques avec l'environnement, ou applique une valeur par defaut */
 /* Entrée: le nom de fichier, le JsonNode des défauts                                                                         */
 /* Sortie: un nouveau buffer JsonNode qui reunit le meilleur des 3 mondes (env, file, default)                                */
@@ -407,7 +414,7 @@ end:
        json_object_iter_init(&iter, fromFileObject);
        while (json_object_iter_next(&iter, &name, &ObjectMemberNode))
         { Json_copy_member_into ( from_file, name, target ); }
-       json_node_unref( from_file );
+       Json_unref( from_file );
      } else abls_info ( __func__, "config", LOG_WARNING, "Unable to read file config '%s'", filename );
 
     abls_info ( __func__, "config", LOG_NOTICE, "Apply ENVironment Variables" );
