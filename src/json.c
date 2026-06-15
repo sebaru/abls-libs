@@ -205,19 +205,19 @@
     if (tableau) json_array_remove_element ( tableau, index );
   }
 /******************************************************************************************************************************/
-/* Json_array_get_element: Recupere un element du tableau nommé en paramètre                                                 */
-/* Entrée: le RootNode, le nom du tableau, l'index                                                                           */
-/* Sortie: le JsonNode demandé ou NULL                                                                                       */
+/* Json_array_get_element: Recupere un element du tableau nommé en paramètre                                                  */
+/* Entrée: le RootNode, le nom du tableau, l'index                                                                            */
+/* Sortie: le JsonNode demandé ou NULL                                                                                        */
 /******************************************************************************************************************************/
- JsonNode *Json_array_get_element ( JsonNode *RootNode, gchar *array_name, guint index )
+ JsonNode *Json_array_get_element_at ( JsonNode *RootNode, gchar *array_name, guint index )
   { JsonArray *tableau = Json_get_array ( RootNode, array_name );
     if (!tableau) return(NULL);
     return(json_array_get_element ( tableau, index ));
   }
 /******************************************************************************************************************************/
-/* Json_array_get_length: Recupere la taille du tableau nommé en paramètre                                                   */
-/* Entrée: le RootNode, le nom du tableau                                                                                    */
-/* Sortie: la taille du tableau, 0 si absent                                                                                 */
+/* Json_array_get_length: Recupere la taille du tableau nommé en paramètre                                                    */
+/* Entrée: le RootNode, le nom du tableau                                                                                     */
+/* Sortie: la taille du tableau, 0 si absent                                                                                  */
 /******************************************************************************************************************************/
  guint Json_array_get_length ( JsonNode *RootNode, gchar *array_name )
   { JsonArray *tableau = Json_get_array ( RootNode, array_name );
@@ -225,7 +225,7 @@
     return(json_array_get_length ( tableau ));
   }
 /******************************************************************************************************************************/
-/* Json_node_foreach_array_element: Lance une fonction en parametre sur chacun des elements d'un tableau                     */
+/* Json_node_foreach_array_element: Lance une fonction en parametre sur chacun des elements d'un tableau                      */
 /* Entrée: le RootNode, le nom du parametre, la fonction et les donnees utilisateur                                           */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
@@ -247,7 +247,7 @@
   { return(json_from_string ( chaine, NULL )); }
 /******************************************************************************************************************************/
 /* Json_get_string: Recupere la chaine de caractere dont le nom est en parametre                                              */
-/* Entrée: le RootNode, le nom du parametre                                                                                      */
+/* Entrée: le RootNode, le nom du parametre                                                                                   */
 /* Sortie: la chaine de caractere                                                                                             */
 /******************************************************************************************************************************/
  gchar *Json_get_string ( JsonNode *RootNode, gchar *chaine )
@@ -256,8 +256,8 @@
     return((gchar *)json_object_get_string_member ( object, chaine ));
   }
 /******************************************************************************************************************************/
-/* Json_get_double: Recupere la valeur double dont le nom est en parametre                                                  */
-/* Entrée: le RootNode, le nom du parametre                                                                                      */
+/* Json_get_double: Recupere la valeur double dont le nom est en parametre                                                    */
+/* Entrée: le RootNode, le nom du parametre                                                                                   */
 /* Sortie: la valeur double                                                                                                   */
 /******************************************************************************************************************************/
  gdouble Json_get_double ( JsonNode *RootNode, gchar *chaine )
@@ -266,8 +266,8 @@
     return(json_object_get_double_member ( object, chaine ));
   }
 /******************************************************************************************************************************/
-/* Json_get_bool: Recupere la valeur booléenne dont le nom est en parametre                                                  */
-/* Entrée: le RootNode, le nom du parametre                                                                                      */
+/* Json_get_bool: Recupere la valeur booléenne dont le nom est en parametre                                                   */
+/* Entrée: le RootNode, le nom du parametre                                                                                   */
 /* Sortie: la valeur booléenne                                                                                                */
 /******************************************************************************************************************************/
  gboolean Json_get_bool ( JsonNode *RootNode, gchar *chaine )
@@ -277,8 +277,8 @@
   }
 /******************************************************************************************************************************/
 /* Json_get_int: Recupere l'entier dont le nom est en parametre                                                               */
-/* Entrée: le RootNode, le nom du parametre                                                                                      */
-/* Sortie: la valeur entière                                                                                             */
+/* Entrée: le RootNode, le nom du parametre                                                                                   */
+/* Sortie: la valeur entière                                                                                                  */
 /******************************************************************************************************************************/
  gint Json_get_int ( JsonNode *RootNode, gchar *chaine )
   { JsonObject *object = json_node_get_object (RootNode);
@@ -288,7 +288,7 @@
 /******************************************************************************************************************************/
 /* Json_get_array: Recupere le tableau dont le nom est en parametre                                                           */
 /* Entrée: le RootNode, le nom du parametre                                                                                   */
-/* Sortie: le tableau                                                                                                          */
+/* Sortie: le tableau                                                                                                         */
 /******************************************************************************************************************************/
  JsonArray *Json_get_array ( JsonNode *RootNode, gchar *chaine )
   { JsonObject *object = json_node_get_object (RootNode);
@@ -298,7 +298,7 @@
 /******************************************************************************************************************************/
 /* Json_get_object_as_object: Recupere l'objet dont le nom est en parametre                                                   */
 /* Entrée: le RootNode, le nom du parametre                                                                                   */
-/* Sortie: l'objet                                                                                                             */
+/* Sortie: l'objet                                                                                                            */
 /******************************************************************************************************************************/
  JsonObject *Json_get_object_as_object ( JsonNode *RootNode, gchar *chaine )
   { JsonObject *object = json_node_get_object (RootNode);
@@ -308,7 +308,7 @@
 /******************************************************************************************************************************/
 /* Json_get_object_as_node: Recupere le node dont le nom est en parametre                                                     */
 /* Entrée: le RootNode, le nom du parametre                                                                                   */
-/* Sortie: le node                                                                                                             */
+/* Sortie: le node                                                                                                            */
 /******************************************************************************************************************************/
  JsonNode *Json_get_object_as_node ( JsonNode *RootNode, gchar *chaine )
   { JsonObject *object = json_node_get_object (RootNode);
