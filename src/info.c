@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* src/info.c      Librairie partagee de journalisation abls_info — Abls-Habitat                                              */
-/* Projet Abls-Libs version 1.0       Gestion d'habitat                                                            13.06.2026 */
+/* Projet Abls-Libs version 1.0       Gestion d'habitat                                         lun 21 avr 2003 22:06:10 CEST */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
