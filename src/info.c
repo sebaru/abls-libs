@@ -1,5 +1,5 @@
 /******************************************************************************************************************************/
-/* src/info.c      Librairie partagee de journalisation abls_info — Abls-Habitat                                            */
+/* src/info.c      Librairie partagee de journalisation abls_info — Abls-Habitat                                              */
 /* Projet Abls-Libs version 1.0       Gestion d'habitat                                                            13.06.2026 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
@@ -35,8 +35,9 @@
  static const gchar *Prefixe_name = NULL;
 
 /******************************************************************************************************************************/
-/* abls_info_debug_facility: Active le forcage de debug pour une facility donnée                                              */
-/* Entree: le nom du facility (ex: "smsg", "bus", "json")                                                                     */
+/* Info_debug_facility: Active le forcage de debug pour une facility donnee                                                   */
+/* Entree: prefixe_valeur - valeur associee au prefixe de log                                                                 */
+/*         facility       - nom de la facility (ex: "smsg", "bus", "json")                                                    */
 /* Sortie: neant                                                                                                              */
 /******************************************************************************************************************************/
  void Info_debug_facility ( const gchar *prefixe_valeur, const gchar *facility )
@@ -50,7 +51,8 @@
   }
 /******************************************************************************************************************************/
 /* Info_undebug_facility: Desactive le forcage de debug pour une facility donnée                                              */
-/* Entree: le nom du facility (ex: "smsg", "bus", "json")                                                                     */
+/* Entree: prefixe_valeur - valeur associee au prefixe de log                                                                 */
+/*         facility       - nom de la facility (ex: "smsg", "bus", "json")                                                    */
 /* Sortie: neant                                                                                                              */
 /******************************************************************************************************************************/
  void Info_undebug_facility ( const gchar *prefixe_valeur, const gchar *facility )
@@ -86,7 +88,12 @@
   { return ( g_atomic_int_and ( &Nbr_log_sent, 0 ) ); }
 /******************************************************************************************************************************/
 /* Info_full: Envoie un message structure JSON vers syslog                                                                    */
-/* Entree: les prefixes, le format, les variables variadiques                                                                 */
+/* Entree: function - nom de la fonction appelante                                                                            */
+/*         prefixe  - valeur optionnelle a associer a Prefixe_name                                                            */
+/*         facility - sous-systeme / module (ex: "smsg", "json")                                                              */
+/*         priority - niveau syslog (LOG_ERR, LOG_WARNING, LOG_NOTICE, LOG_INFO, LOG_DEBUG)                                   */
+/*         format   - format printf du message                                                                                */
+/*         ap       - liste d'arguments variadiques deja initialisee                                                          */
 /* Sortie: neant                                                                                                              */
 /*                                                                                                                            */
 /* Comportement de filtrage :                                                                                                 */
@@ -133,14 +140,14 @@
 /******************************************************************************************************************************/
 /* Info: Envoie un message structure JSON vers syslog                                                                         */
 /* Entree: function  - nom de la fonction appelante (__func__)                                                                */
-/*         facility   - sous-systeme / module (ex: "smsg", "json") ; NULL -> ""                                               */
+/*         facility  - sous-systeme / module (ex: "smsg", "json") ; NULL si non renseigne                                     */
 /*         priority  - niveau syslog (LOG_ERR, LOG_WARNING, LOG_NOTICE, LOG_INFO, LOG_DEBUG)                                  */
 /*         format    - format printf suivi des arguments variadiques                                                          */
 /* Sortie: neant                                                                                                              */
 /*                                                                                                                            */
 /* Comportement de filtrage :                                                                                                 */
-/*   - Si le facility figure dans Debug_facilitys -> le message est toujours emis                                             */
-/*   - Sinon -> syslog filtre normalement selon setlogmask                                                                    */
+/*   - Si le facility figure dans Debug_facilities -> le message est toujours emis                                            */
+/*   - Sinon -> la priority est comparee au Log_level avant envoi a syslog                                                    */
 /******************************************************************************************************************************/
  void Info ( const gchar *function, const gchar *facility, guint priority, const gchar *format, ... )
   { va_list ap;
@@ -152,14 +159,15 @@
 /******************************************************************************************************************************/
 /* Info_with_prefix: Envoie un message structure JSON vers syslog                                                             */
 /* Entree: function  - nom de la fonction appelante (__func__)                                                                */
-/*         facility   - sous-systeme / module (ex: "smsg", "json") ; NULL -> ""                                               */
+/*         facility  - sous-systeme / module (ex: "smsg", "json") ; NULL si non renseigne                                     */
+/*         prefixe   - valeur a associer a Prefixe_name dans le JSON                                                          */
 /*         priority  - niveau syslog (LOG_ERR, LOG_WARNING, LOG_NOTICE, LOG_INFO, LOG_DEBUG)                                  */
 /*         format    - format printf suivi des arguments variadiques                                                          */
 /* Sortie: neant                                                                                                              */
 /*                                                                                                                            */
 /* Comportement de filtrage :                                                                                                 */
-/*   - Si le facility figure dans Debug_facilitys -> le message est toujours emis                                             */
-/*   - Sinon -> syslog filtre normalement selon setlogmask                                                                    */
+/*   - Si le facility figure dans Debug_facilities -> le message est toujours emis                                            */
+/*   - Sinon -> la priority est comparee au Log_level avant envoi a syslog                                                    */
 /******************************************************************************************************************************/
  void Info_with_prefix ( const gchar *function, const gchar *facility, const gchar *prefixe, guint priority, const gchar *format, ... )
   { va_list ap;
@@ -190,8 +198,9 @@
   }
 /******************************************************************************************************************************/
 /* Info_init: Initialise le sous-systeme de log                                                                               */
-/* Entree: entete    - identifiant du processus dans syslog (NULL -> nom du processus)                                        */
-/*         log_level - niveau initial (LOG_DEBUG = 7, LOG_INFO = 6, ...)                                                      */
+/* Entree: entete       - identifiant du processus dans syslog (NULL -> nom du processus)                                     */
+/*         prefixe_name - nom de la cle JSON utilisee pour stocker le prefixe                                                 */
+/*         log_level    - niveau initial (LOG_DEBUG = 7, LOG_INFO = 6, ...)                                                   */
 /* Sortie: neant                                                                                                              */
 /******************************************************************************************************************************/
  void Info_init ( const gchar *entete, const gchar *prefixe_name, guint log_level )
