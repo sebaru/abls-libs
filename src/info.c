@@ -200,7 +200,7 @@
     Prefixe_name     = prefixe_name;
     on_exit( abls_info_stop, NULL );
     openlog ( entete, LOG_CONS | LOG_PID, LOG_USER );
-    abls_info ( __func__, "log", LOG_INFO, "Start of logs" );
+    abls_info ( __func__, "log", LOG_INFO, "Start of logs with ABLS_LIBS_VERSION=%s", ABLS_LIBS_VERSION );
     abls_info_change_log_level ( log_level );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

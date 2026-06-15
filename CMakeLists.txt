@@ -14,6 +14,10 @@ execute_process(
   ERROR_QUIET
 )
 
+if(NOT ABLS_LIBS_VERSION)
+  set(ABLS_LIBS_VERSION "unknown")
+endif()
+
 if(ABLS_LIBS_VERSION MATCHES "^v?([0-9]+\\.[0-9]+)")
   set(ABLS_LIBS_VERSION_NUMBER "${CMAKE_MATCH_1}")
 else()
@@ -25,6 +29,10 @@ project(abls-libs
   DESCRIPTION "Abls Habitat shared logging library"
   HOMEPAGE_URL "https://docs.abls-habitat.fr"
   LANGUAGES C
+)
+
+add_compile_definitions(
+  ABLS_LIBS_VERSION="${ABLS_LIBS_VERSION}"
 )
 
 include(GNUInstallDirs)
