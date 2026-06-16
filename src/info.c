@@ -43,7 +43,7 @@
  void Info_debug_facility ( const gchar *prefixe_valeur, const gchar *facility )
   { if (!facility) return;
     g_rw_lock_writer_lock ( &Debug_facilities_lock );
-    if (! g_slist_find_custom ( Debug_facilities, facility, (GCompareFunc)g_strcmp0 ) )
+    if (! g_slist_find_custom ( Debug_facilities, facility, (GCompareFunc)g_ascii_strcasecmp ) )
      { Debug_facilities = g_slist_prepend ( Debug_facilities, g_strdup(facility) );
        Info_with_prefix ( __func__, "log", prefixe_valeur, LOG_NOTICE, "Debug facility '%s' is forced", facility );
      }
@@ -58,7 +58,7 @@
  void Info_undebug_facility ( const gchar *prefixe_valeur, const gchar *facility )
   { if (!facility) return;
     g_rw_lock_writer_lock ( &Debug_facilities_lock );
-    GSList *found = g_slist_find_custom ( Debug_facilities, facility, (GCompareFunc)g_strcmp0 );
+    GSList *found = g_slist_find_custom ( Debug_facilities, facility, (GCompareFunc)g_ascii_strcasecmp );
     if (found)
      { g_free ( found->data );
        Debug_facilities = g_slist_delete_link ( Debug_facilities, found );
