@@ -41,18 +41,9 @@
  extern void Info_init             ( const gchar *entete, const gchar *prefixe_name, guint log_level );
  extern void Info_change_log_level ( guint new_log_level );
 
-/*-- Logging with prefixe ----------------------------------------------------------------------------------------------------*/
- extern void Info ( const gchar *function,
-                    const gchar *facility,
-                         guint        priority,
-                         const gchar *format, ... );
-
-/*-- Logging with prefixe ----------------------------------------------------------------------------------------------------*/
- extern void Info_with_prefix ( const gchar *function,
-                                const gchar *facility,
-                                const gchar *prefixe,
-                                guint        priority,
-                                const gchar *format, ... );
+/*-- Logging -----------------------------------------------------------------------------------------------------------------*/
+ extern void Info ( const gchar *function, const gchar *facility, const gchar *prefixe, guint priority,
+                    const gchar *format, ... );
 
 /*-- Compteur de messages ----------------------------------------------------------------------------------------------------*/
  extern gint Info_reset_nbr_log ( void );

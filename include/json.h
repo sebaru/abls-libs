@@ -31,6 +31,8 @@
  #include <glib.h>
  #include <json-glib/json-glib.h>
 
+#define FACILITY_JSON "json"
+
 /*-- Creation / copie / affichage --------------------------------------------------------------------------------------------*/
  extern JsonNode  *Json_create                  ( void );
  extern void       Json_copy_member_into        ( JsonNode *SrcNode, const gchar *name, JsonNode *DestNode );

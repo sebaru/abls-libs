@@ -34,22 +34,30 @@
 
  struct ABLS_MQTT
   { struct mosquitto *MOSQ_session;
-    gchar log_facility[32];
+    gchar *log_facility;
+    gchar *log_prefixe;
+    gchar *client_id;
+    gchar *hostname;
+    gchar *username;
+    gchar *password;
+    gint   port;
     gboolean connected;
     gint qos;
     GAsyncQueue *queue;
+    GRWLock subscribed_topics_lock;
     GSList *subscribed_topics;
   };
 
 /*-- API publique MQTT ----------------------------------------------------------------------------------------------*/
- extern struct ABLS_MQTT *abls_mqtt_init ( const gchar *log_facility, const gchar *client_id,
+ extern struct ABLS_MQTT *Mqtt_init ( const gchar *log_facility, const gchar *log_prefixe, const gchar *client_id,
                                            gboolean is_ssl, const gchar *ca_file, const gchar *ca_path,
                                            const gchar *username, const gchar *password,
                                            const gchar *hostname, gint port, gint qos );
- extern gboolean abls_mqtt_start ( struct ABLS_MQTT *mqtt );
- extern void abls_mqtt_stop      ( struct ABLS_MQTT *mqtt );
- extern void abls_mqtt_subscribe ( struct ABLS_MQTT *mqtt, gchar *format, ... );
- extern void abls_mqtt_send      ( struct ABLS_MQTT *mqtt, JsonNode *node, gboolean retain, gchar *topic, ... );
+ extern gboolean Mqtt_start ( struct ABLS_MQTT *mqtt );
+ extern void Mqtt_stop      ( struct ABLS_MQTT *mqtt );
+ extern void Mqtt_subscribe ( struct ABLS_MQTT *mqtt, gchar *format, ... );
+ extern void Mqtt_unsubscribe ( struct ABLS_MQTT *mqtt, gchar *format, ... );  
+ extern void Mqtt_send      ( struct ABLS_MQTT *mqtt, JsonNode *node, gboolean retain, gchar *topic, ... );
 
 #endif /* _ABLS_MQTT_H_ */
 /*----------------------------------------------------------------------------------------------------------------------------*/

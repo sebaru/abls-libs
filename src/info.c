@@ -45,7 +45,7 @@
     g_rw_lock_writer_lock ( &Debug_facilities_lock );
     if (! g_slist_find_custom ( Debug_facilities, facility, (GCompareFunc)g_ascii_strcasecmp ) )
      { Debug_facilities = g_slist_prepend ( Debug_facilities, g_strdup(facility) );
-       Info_with_prefix ( __func__, "log", prefixe_valeur, LOG_NOTICE, "Debug facility '%s' is forced", facility );
+       Info ( __func__, "log", prefixe_valeur, LOG_NOTICE, "Debug facility '%s' is forced", facility );
      }
     g_rw_lock_writer_unlock ( &Debug_facilities_lock );
   }
@@ -62,7 +62,7 @@
     if (found)
      { g_free ( found->data );
        Debug_facilities = g_slist_delete_link ( Debug_facilities, found );
-       Info_with_prefix ( __func__, "log", "master", LOG_NOTICE, "Debug facility '%s' is no longer forced", facility );
+       Info ( __func__, "log", prefixe_valeur, LOG_NOTICE, "Debug facility '%s' is no longer forced", facility );
      }
     g_rw_lock_writer_unlock ( &Debug_facilities_lock );
   }
@@ -87,22 +87,22 @@
  gint Info_reset_nbr_log ( void )
   { return ( g_atomic_int_and ( &Nbr_log_sent, 0 ) ); }
 /******************************************************************************************************************************/
-/* Info_full: Envoie un message structure JSON vers syslog                                                                    */
-/* Entree: function - nom de la fonction appelante                                                                            */
-/*         prefixe  - valeur optionnelle a associer a Prefixe_name                                                            */
-/*         facility - sous-systeme / module (ex: "smsg", "json")                                                              */
-/*         priority - niveau syslog (LOG_ERR, LOG_WARNING, LOG_NOTICE, LOG_INFO, LOG_DEBUG)                                   */
-/*         format   - format printf du message                                                                                */
-/*         ap       - liste d'arguments variadiques deja initialisee                                                          */
+/* Info: Envoie un message structure JSON vers syslog                                                                         */
+/* Entree: function  - nom de la fonction appelante (__func__)                                                                */
+/*         facility  - sous-systeme / module (ex: "smsg", "json") ; NULL si non renseigne                                     */
+/*         prefixe   - valeur a associer a Prefixe_name dans le JSON                                                          */
+/*         priority  - niveau syslog (LOG_ERR, LOG_WARNING, LOG_NOTICE, LOG_INFO, LOG_DEBUG)                                  */
+/*         format    - format printf suivi des arguments variadiques                                                          */
 /* Sortie: neant                                                                                                              */
 /*                                                                                                                            */
 /* Comportement de filtrage :                                                                                                 */
 /*   - Si le facility figure dans Debug_facilities -> le message est toujours emis                                            */
-/*   - Sinon -> la priority est comparee au Log_level                                                                         */
+/*   - Sinon -> la priority est comparee au Log_level avant envoi a syslog                                                    */
 /******************************************************************************************************************************/
- static void Info_full ( const gchar *function, const gchar *prefixe,
-                              const gchar *facility, guint priority, const gchar *format, va_list ap )
-  { gchar resultat[512], chaine[128], nom_thread[32];
+void Info ( const gchar *function, const gchar *facility, const gchar *prefixe, guint priority,
+        const gchar *format, ... )
+ { gchar resultat[512], chaine[128], nom_thread[32];
+  va_list ap;
     gboolean forced;
 
     if (facility)
@@ -133,48 +133,11 @@
      }
     g_strlcat ( resultat, " }", sizeof(resultat) );
 
+    va_start ( ap, format );
     vsyslog ( priority, resultat, ap );
+    va_end ( ap );
 
     g_atomic_int_inc ( &Nbr_log_sent );
-  }
-/******************************************************************************************************************************/
-/* Info: Envoie un message structure JSON vers syslog                                                                         */
-/* Entree: function  - nom de la fonction appelante (__func__)                                                                */
-/*         facility  - sous-systeme / module (ex: "smsg", "json") ; NULL si non renseigne                                     */
-/*         priority  - niveau syslog (LOG_ERR, LOG_WARNING, LOG_NOTICE, LOG_INFO, LOG_DEBUG)                                  */
-/*         format    - format printf suivi des arguments variadiques                                                          */
-/* Sortie: neant                                                                                                              */
-/*                                                                                                                            */
-/* Comportement de filtrage :                                                                                                 */
-/*   - Si le facility figure dans Debug_facilities -> le message est toujours emis                                            */
-/*   - Sinon -> la priority est comparee au Log_level avant envoi a syslog                                                    */
-/******************************************************************************************************************************/
- void Info ( const gchar *function, const gchar *facility, guint priority, const gchar *format, ... )
-  { va_list ap;
-
-    va_start ( ap, format );
-    Info_full ( function, NULL, facility, priority, format, ap );
-    va_end ( ap );
-  }
-/******************************************************************************************************************************/
-/* Info_with_prefix: Envoie un message structure JSON vers syslog                                                             */
-/* Entree: function  - nom de la fonction appelante (__func__)                                                                */
-/*         facility  - sous-systeme / module (ex: "smsg", "json") ; NULL si non renseigne                                     */
-/*         prefixe   - valeur a associer a Prefixe_name dans le JSON                                                          */
-/*         priority  - niveau syslog (LOG_ERR, LOG_WARNING, LOG_NOTICE, LOG_INFO, LOG_DEBUG)                                  */
-/*         format    - format printf suivi des arguments variadiques                                                          */
-/* Sortie: neant                                                                                                              */
-/*                                                                                                                            */
-/* Comportement de filtrage :                                                                                                 */
-/*   - Si le facility figure dans Debug_facilities -> le message est toujours emis                                            */
-/*   - Sinon -> la priority est comparee au Log_level avant envoi a syslog                                                    */
-/******************************************************************************************************************************/
- void Info_with_prefix ( const gchar *function, const gchar *facility, const gchar *prefixe, guint priority, const gchar *format, ... )
-  { va_list ap;
-
-    va_start ( ap, format );
-    Info_full ( function, prefixe, facility, priority, format, ap );
-    va_end ( ap );
   }
 /******************************************************************************************************************************/
 /* Info_change_log_level: Change le niveau de log global                                                                      */
@@ -183,7 +146,7 @@
 /******************************************************************************************************************************/
  void Info_change_log_level ( guint new_log_level )
   { Log_level = new_log_level;
-    Info ( __func__, "log", LOG_NOTICE, "Log level set to %d", new_log_level );
+    Info ( __func__, "log", NULL, LOG_NOTICE, "Log level set to %d", new_log_level );
   }
 /******************************************************************************************************************************/
 /* Info_stop: Ferme la connexion syslog                                                                                       */
@@ -191,7 +154,7 @@
 /* Sortie: neant                                                                                                              */
 /******************************************************************************************************************************/
  static void Info_stop ( int code_retour, void *data )
-  { Info ( __func__, "log", LOG_NOTICE, "End of logs" );
+  { Info ( __func__, "log", NULL, LOG_NOTICE, "End of logs" );
     Info_clear_debug_facilities ();
     g_rw_lock_clear ( &Debug_facilities_lock );
     closelog();
@@ -209,7 +172,7 @@
     Prefixe_name     = prefixe_name;
     on_exit( Info_stop, NULL );
     openlog ( entete, LOG_CONS | LOG_PID, LOG_USER );
-    Info ( __func__, "log", LOG_INFO, "Start of logs with ABLS_LIBS_VERSION=%s", ABLS_LIBS_VERSION );
+    Info ( __func__, "log", NULL, LOG_INFO, "Start of logs with ABLS_LIBS_VERSION=%s", ABLS_LIBS_VERSION );
     Info_change_log_level ( log_level );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
