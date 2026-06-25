@@ -32,6 +32,8 @@
  #include <json-glib/json-glib.h>
  #include <mosquitto.h>
 
+ #define ABLS_MQTT_RECONNECT_DELAY 5                                                                            /* en seconde */
+
  struct ABLS_MQTT
   { struct mosquitto *MOSQ_session;
     gchar *log_facility;
@@ -42,13 +44,14 @@
     gchar *password;
     gint   port;
     gboolean connected;
+    gint next_top_connect;
     gint qos;
     GAsyncQueue *queue;
     GRWLock subscribed_topics_lock;
     GSList *subscribed_topics;
   };
 
-/*-- API publique MQTT ----------------------------------------------------------------------------------------------*/
+/*-- API publique MQTT -------------------------------------------------------------------------------------------------------*/
  extern struct ABLS_MQTT *Mqtt_init ( const gchar *log_facility, const gchar *log_prefixe, const gchar *client_id,
                                            gboolean is_ssl, const gchar *ca_file, const gchar *ca_path,
                                            const gchar *username, const gchar *password,

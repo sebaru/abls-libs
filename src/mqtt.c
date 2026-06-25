@@ -206,6 +206,12 @@ end:
 /******************************************************************************************************************************/
  JsonNode *Mqtt_get_message ( struct ABLS_MQTT *mqtt )
   { if (!mqtt || !mqtt->queue) return(NULL);
+    if (mqtt->connected == FALSE && mqtt->next_top_connect <= time(NULL) )                        /* tentative de reconnexion */
+     { gchar *thread_tech_id = Json_get_string ( mqtt->config, "thread_tech_id" );
+       Info( __func__, mqtt->facility, mqtt->log_prefixe, LOG_INFO, "Retrying MQTT connection to '%s'.", mqtt->hostname );
+       mosquitto_reconnect_async(	mqtt->MOSQ_session	);
+       mqtt->next_top_connect = time(NULL) + ABLS_MQTT_RECONNECT_DELAY;
+     } 
     return (JsonNode *)g_async_queue_try_pop ( mqtt->queue );
   }
 /******************************************************************************************************************************/
