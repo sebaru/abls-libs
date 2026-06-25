@@ -57,7 +57,8 @@
  extern void Mqtt_stop      ( struct ABLS_MQTT *mqtt );
  extern void Mqtt_subscribe ( struct ABLS_MQTT *mqtt, gchar *format, ... );
  extern void Mqtt_unsubscribe ( struct ABLS_MQTT *mqtt, gchar *format, ... );  
- extern void Mqtt_send      ( struct ABLS_MQTT *mqtt, JsonNode *node, gboolean retain, gchar *topic, ... );
+ extern void Mqtt_send_message     ( struct ABLS_MQTT *mqtt, JsonNode *node, gboolean retain, gchar *topic, ... );
+ extern JsonNode *Mqtt_get_message ( struct ABLS_MQTT *mqtt );
 
 #endif /* _ABLS_MQTT_H_ */
 /*----------------------------------------------------------------------------------------------------------------------------*/

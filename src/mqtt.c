@@ -200,11 +200,20 @@ end:
     g_strfreev( tokens );                                                                      /* Libération des tokens topic */
   }
 /******************************************************************************************************************************/
-/* Mqtt_send: Envoie le node au broker                                                                                        */
+/* Mqtt_get_message: Tente de récupérer un message JSON depuis la queue MQTT sans bloquer                                     */
+/* Entrées: le client MQTT                                                                                                    */
+/* Sortie : un JsonNode si disponible, NULL sinon                                                                             */
+/******************************************************************************************************************************/
+ JsonNode *Mqtt_get_message ( struct ABLS_MQTT *mqtt )
+  { if (!mqtt || !mqtt->queue) return(NULL);
+    return (JsonNode *)g_async_queue_try_pop ( mqtt->queue );
+  }
+/******************************************************************************************************************************/
+/* Mqtt_send_message: Envoie le node au broker                                                                                */
 /* Entrée: le topic, le node, le flag retain                                                                                  */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Mqtt_send ( struct ABLS_MQTT *mqtt, JsonNode *node, gboolean retain, gchar *topic, ... )
+ void Mqtt_send_message ( struct ABLS_MQTT *mqtt, JsonNode *node, gboolean retain, gchar *topic, ... )
   { gchar topic_inter[256], topic_full[256];
     va_list ap;
     if (!topic) return;
