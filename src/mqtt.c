@@ -196,7 +196,6 @@
         }
        g_async_queue_push ( mqtt->queue, message );/* Ajoute le message dans la queue pour traitement par le thread principal */
      }
-    Json_unref ( message );
 end:
     g_strfreev( tokens );                                                                      /* Libération des tokens topic */
   }
