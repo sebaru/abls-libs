@@ -1,19 +1,40 @@
 #!/bin/bash
-# build.sh — Compile abls-libs dans le répertoire build/
-set -e
+
+# Build script for ABLS libs
+# This script builds the project in the 'build' directory using CMake
+
+set -e  # Exit on error
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="$PROJECT_DIR/build"
 
+if [ "${1:-}" = "clean" ]; then
+	rm -rf "$BUILD_DIR"
+fi
+
 echo "Building abls-libs..."
 echo "Project directory: $PROJECT_DIR"
-echo "Build directory:   $BUILD_DIR"
+echo "Build directory: $BUILD_DIR"
+echo "Number of processors: $(nproc)"
 
-mkdir -p "$BUILD_DIR"
+# Create build directory if it doesn't exist
+if [ ! -d "$BUILD_DIR" ]; then
+	echo "Creating build directory..."
+	mkdir -p "$BUILD_DIR"
+fi
+
+# Navigate to build directory
 cd "$BUILD_DIR"
 
+# Run CMake to generate build files
+echo "Running CMake..."
 cmake ..
+
+# Build the project
+echo "Building project..."
 cmake --build . -- -j$(nproc)
 
 echo ""
-echo "Build completed. Install with: sudo ./install.sh"
+echo "Build completed successfully!"
+echo "Built artifacts are in: $BUILD_DIR"
+echo "Install with ./install.sh"
