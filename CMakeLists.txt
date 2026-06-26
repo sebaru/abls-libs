@@ -21,7 +21,7 @@ endif()
 if(ABLS_LIBS_VERSION MATCHES "^v?([0-9]+\\.[0-9]+)")
   set(ABLS_LIBS_VERSION_NUMBER "${CMAKE_MATCH_1}")
 else()
-  set(ABLS_LIBS_VERSION_NUMBER "1.0")
+  set(ABLS_LIBS_VERSION_NUMBER "0.1")
 endif()
 
 project(abls-libs
@@ -115,14 +115,12 @@ set(CPACK_RPM_RUNTIME_PACKAGE_SUMMARY "Abls-Habitat shared library (runtime)")
 set(CPACK_RPM_RUNTIME_PACKAGE_REQUIRES "glib2, json-glib")
 set(CPACK_RPM_RUNTIME_POST_INSTALL_SCRIPT_FILE "" )
 set(CPACK_RPM_RUNTIME_POST_SCRIPTLET  "/sbin/ldconfig")
-set(CPACK_RPM_RUNTIME_FILE_NAME
-  "abls-libs-${PROJECT_VERSION}-${CPACK_PACKAGE_RELEASE}.rpm")
+set(CPACK_RPM_RUNTIME_FILE_NAME "RPM-DEFAULT")
 
 # Package devel
 set(CPACK_RPM_DEVEL_PACKAGE_NAME    "abls-libs-devel")
 set(CPACK_RPM_DEVEL_PACKAGE_SUMMARY "Abls-Habitat shared library (development files)")
 set(CPACK_RPM_DEVEL_PACKAGE_REQUIRES "abls-libs = ${PROJECT_VERSION}, glib2-devel, json-glib-devel")
-set(CPACK_RPM_DEVEL_FILE_NAME
-  "abls-libs-devel-${PROJECT_VERSION}-${CPACK_PACKAGE_RELEASE}.rpm")
+set(CPACK_RPM_DEVEL_FILE_NAME "RPM-DEFAULT")
 
 include(CPack)

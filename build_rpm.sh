@@ -1,5 +1,5 @@
 #!/bin/bash
-# install_rpm.sh — Fabrique les RPMs via CPack puis réinstalle les paquets locaux
+# build_rpm.sh — Fabrique les RPMs via CPack
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -28,24 +28,7 @@ if [[ -z "$runtime_rpm" || -z "$devel_rpm" ]]; then
   exit 1
 fi
 
-installed_packages=()
-
-if rpm -q abls-libs >/dev/null 2>&1; then
-  installed_packages+=(abls-libs)
-fi
-
-if rpm -q abls-libs-devel >/dev/null 2>&1; then
-  installed_packages+=(abls-libs-devel)
-fi
-
-if [[ ${#installed_packages[@]} -gt 0 ]]; then
-  echo "Removing installed packages: ${installed_packages[*]}"
-  sudo dnf remove -y "${installed_packages[@]}"
-fi
-
-echo "Installing RPMs:"
+echo "RPMs generated:"
 echo "  $runtime_rpm"
 echo "  $devel_rpm"
-sudo dnf install -y "$runtime_rpm" "$devel_rpm"
-
-echo "RPM installation complete."
+echo "RPM build complete."
