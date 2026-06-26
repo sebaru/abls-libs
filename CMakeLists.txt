@@ -21,7 +21,7 @@ endif()
 if(ABLS_LIBS_VERSION MATCHES "^v?([0-9]+\\.[0-9]+)")
   set(ABLS_LIBS_VERSION_NUMBER "${CMAKE_MATCH_1}")
 else()
-  set(ABLS_LIBS_VERSION_NUMBER "v0.0")
+  set(ABLS_LIBS_VERSION_NUMBER "v0.1")
 endif()
 
 project(abls-libs
