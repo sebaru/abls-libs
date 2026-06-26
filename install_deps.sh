@@ -13,5 +13,5 @@ groupadd abls
 if [ "$SOCLE" = "fedora" ]
  then
 	echo "Installing Fedora dependencies"
-	dnf install -y glib2-devel cmake rpm-build git
+	dnf install -y gcc glib2-devel json-glib-devel mosquitto-devel cmake rpm-build git
 fi
