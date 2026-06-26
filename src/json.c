@@ -66,7 +66,7 @@
 /* Entrée: Le node json a dumper                                                                                              */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Json_to_log ( gchar *log_prefix, gchar *log_facility, JsonNode *RootNode )
+ void Json_to_log ( gchar *log_facility, gchar *log_prefix, JsonNode *RootNode )
   { const char *name;
     JsonObjectIter iter;
     JsonNode *ObjectMemberNode;
