@@ -201,6 +201,8 @@ run_cmd "git pull --ff-only origin trunk"
 
 ensure_tag_absent
 run_cmd "git tag -a $release_tag -m 'TAG: Create tag $release_tag.'"
+run_cmd "./build.sh"
+run_cmd "./build_rpm.sh"
 
 # Ensure main exists locally/remotely.
 if git show-ref --verify --quiet refs/remotes/origin/main; then
