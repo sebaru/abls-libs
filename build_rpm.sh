@@ -2,17 +2,37 @@
 # build_rpm.sh — Fabrique les RPMs via CPack
 set -euo pipefail
 
+PACKAGE_ONLY=false
+
+case "${1:-}" in
+  "")
+    ;;
+  --package-only|-p)
+    PACKAGE_ONLY=true
+    ;;
+  *)
+    echo "Usage: $0 [--package-only|-p]"
+    exit 2
+    ;;
+esac
+
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="$PROJECT_DIR/build"
 
 echo "Building RPM packages for abls-libs..."
 echo "Project directory: $PROJECT_DIR"
 echo "Build directory:   $BUILD_DIR"
+echo "Package-only mode: $PACKAGE_ONLY"
 
 mkdir -p "$BUILD_DIR"
 
-cmake -S "$PROJECT_DIR" -B "$BUILD_DIR"
-cmake --build "$BUILD_DIR" -- -j"$(nproc)"
+if [[ "$PACKAGE_ONLY" == "false" ]]; then
+  cmake -S "$PROJECT_DIR" -B "$BUILD_DIR"
+  cmake --build "$BUILD_DIR" -- -j"$(nproc)"
+elif [[ ! -f "$BUILD_DIR/CPackConfig.cmake" ]]; then
+  echo "Missing $BUILD_DIR/CPackConfig.cmake. Run ./build.sh first or use full mode."
+  exit 1
+fi
 
 rm -f "$BUILD_DIR"/abls-libs-*.rpm "$BUILD_DIR"/abls-libs-devel-*.rpm
 
