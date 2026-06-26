@@ -26,8 +26,11 @@
  */
 
  #include <glib.h>
+ #include <string.h>
+ #include <syslog.h>
+ #include <time.h>
 
- #include "mqtt.h"
+ #include "abls-libs.h"
 
 /******************************************************************************************************************************/
 /* Mqtt_default_ca_file: Recherche le fichier CA systeme par defaut pour la validation TLS MQTT                               */
@@ -92,7 +95,7 @@
     g_rw_lock_writer_lock(&mqtt->subscribed_topics_lock);
     GSList *found = g_slist_find_custom ( mqtt->subscribed_topics, topic_full, (GCompareFunc)g_ascii_strcasecmp );
     if (found)
-     { mqtt->subscribed_topics = g_slist_remove(mqtt->subscribed_topics, topic_full);
+     { mqtt->subscribed_topics = g_slist_remove(mqtt->subscribed_topics, found->data);
        g_free(found->data);
      }
     g_rw_lock_writer_unlock(&mqtt->subscribed_topics_lock);
@@ -125,8 +128,8 @@
     Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_NOTICE, "Connected with return code %d: %s",
           return_code, mosquitto_connack_string( return_code ) );
     if (return_code == 0)
-     { Partage->MQTT_connected = TRUE;
-       g_rw_reader_lock(&mqtt->subscribed_topics_lock);
+     { mqtt->connected = TRUE;
+       g_rw_lock_reader_lock(&mqtt->subscribed_topics_lock);
        GSList *liste = mqtt->subscribed_topics;
        while (liste)                                                                    /* souscrit aux topics a la connexion */
         { gchar *topic = (gchar *)liste->data;
@@ -136,17 +139,17 @@
            { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_INFO, "Subscribe to topic '%s' OK", topic ); }
           liste = liste->next;
         }
-       g_rw_reader_unlock(&mqtt->subscribed_topics_lock);
+       g_rw_lock_reader_unlock(&mqtt->subscribed_topics_lock);
        while ( g_async_queue_length ( mqtt->queue ) )                              /* s'il y en a, envoie les messages queued */
         { JsonNode *node = g_async_queue_pop ( mqtt->queue );
           gchar *topic    = Json_get_string ( node, "mqtt_queued_topic" );
-          gboolean retain = Json_get_boolean ( node, "mqtt_queued_retain" );
-          gchar *buffer = Json_node_to_string ( node );
+          gboolean retain = Json_get_bool   ( node, "mqtt_queued_retain" );
+          gchar *buffer = Json_to_string ( node );
           if (buffer)
            { mosquitto_publish( mqtt->MOSQ_session, NULL, topic, strlen(buffer), buffer, mqtt->qos, retain );
              g_free(buffer);
            }
-          Json_node_free(node);
+          Json_unref(node);
         }
      }
   }
@@ -159,7 +162,7 @@
   { struct ABLS_MQTT *mqtt = (struct ABLS_MQTT *)obj;
     Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_NOTICE, "Disconnected with return code %d: %s",
           return_code, mosquitto_connack_string( return_code ) );
-    Partage->MQTT_connected = FALSE;
+    mqtt->connected = FALSE;
   }
 /******************************************************************************************************************************/
 /* Mqtt_on_message_CB: Appelé par mosquitto lorsqu'un message MQTT est reçu                                                   */
@@ -178,25 +181,24 @@
 /*-------------------------------------------------- Message with payload ----------------------------------------------------*/
     JsonNode *message = NULL;                                      /* Request peut etre nulle si mal formée ou pas de payload */
     if (msg->payload)
-     { message = Json_get_from_string ( msg->payload ); }          /* Request peut etre nulle si mal formée ou pas de payload */
+     { message = Json_get_from_string ( msg->payload );            /* Request peut etre nulle si mal formée ou pas de payload */
        if (!message)
         { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ERR, "MQTT with invalid payload. Dropping" ); }
-     }
-    else 
+     }                                                             /* Request peut etre nulle si mal formee ou pas de payload */
+    else
      { message = Json_create();                                                        /* Crée un node vide si pas de payload */
        if (!message)
         { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ERR, "Memory error creating message. Dropping" ); }
      }
 
     if (message)                                                            /* Si on a bien un payload ou un tampon tout neuf */
-     { for (i=0; tokens[i]; i++)
+     { for (gint i=0; tokens[i]; i++)
         { gchar name[32];
           g_snprintf ( name, sizeof(name), "mqtt_topic_lvl%d", i );
           Json_add_string ( message, name, tokens[i] );         /* Ajoute les tokens dans le node pour traitement plus simple */
         }
        g_async_queue_push ( mqtt->queue, message );/* Ajoute le message dans la queue pour traitement par le thread principal */
      }
-end:
     g_strfreev( tokens );                                                                      /* Libération des tokens topic */
   }
 /******************************************************************************************************************************/
@@ -207,11 +209,10 @@ end:
  JsonNode *Mqtt_get_message ( struct ABLS_MQTT *mqtt )
   { if (!mqtt || !mqtt->queue) return(NULL);
     if (mqtt->connected == FALSE && mqtt->next_top_connect <= time(NULL) )                        /* tentative de reconnexion */
-     { gchar *thread_tech_id = Json_get_string ( mqtt->config, "thread_tech_id" );
-       Info( __func__, mqtt->facility, mqtt->log_prefixe, LOG_INFO, "Retrying MQTT connection to '%s'.", mqtt->hostname );
+     { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_INFO, "Retrying MQTT connection to '%s'.", mqtt->hostname );
        mosquitto_reconnect_async(	mqtt->MOSQ_session	);
        mqtt->next_top_connect = time(NULL) + ABLS_MQTT_RECONNECT_DELAY;
-     } 
+     }
     return (JsonNode *)g_async_queue_try_pop ( mqtt->queue );
   }
 /******************************************************************************************************************************/
@@ -220,29 +221,31 @@ end:
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void Mqtt_send_message ( struct ABLS_MQTT *mqtt, JsonNode *node, gboolean retain, gchar *topic, ... )
-  { gchar topic_inter[256], topic_full[256];
+  { gchar topic_full[256];
     va_list ap;
-    if (!topic) return;
+    if (!mqtt || !mqtt->MOSQ_session || !topic) return;
 
     va_start( ap, topic );
     g_vsnprintf ( topic_full, sizeof(topic_full), topic, ap );
     va_end ( ap );
 
     gboolean free_node=FALSE;
-    if (!node) { node = Json_node_create(); free_node = TRUE; }
+    if (!node) { node = Json_create(); free_node = TRUE; }
     Json_add_int ( node, "mqtt_time", time(NULL) );
-    gchar *buffer = Json_node_to_string ( node );
+    gchar *buffer = Json_to_string ( node );
+    if (!buffer) goto end;
 
     gint retour = mosquitto_publish( mqtt->MOSQ_session, NULL, topic_full, strlen(buffer), buffer, mqtt->qos, retain );
     if (retour != MOSQ_ERR_SUCCESS )                               /* Si problème d'envoi au MQTT Broker, on garde en mémoire */
      { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ERR, "MQTT publish error: %s. Keeping in memory to send later.", mosquitto_strerror ( retour ) );
-       JsonNode *new_node = Json_node_copy ( node );                      /* Prépare un new node avec topic et retain intégré */
-       Json_node_add_string  ( new_node, "mqtt_queued_topic", topic_full );
-       Json_node_add_boolean ( new_node, "mqtt_queued_retain", retain );
+       JsonNode *new_node = json_node_copy ( node );                      /* Prépare un new node avec topic et retain intégré */
+       Json_add_string ( new_node, "mqtt_queued_topic", topic_full );
+       Json_add_bool   ( new_node, "mqtt_queued_retain", retain );
        g_async_queue_push ( mqtt->queue, new_node );
      }
-    g_free(buffer);
-    if (free_node) Json_node_unref(node);
+end:
+    if(buffer) g_free(buffer);
+    if (free_node) Json_unref(node);
   }
 /******************************************************************************************************************************/
 /* Mqtt_init: Alloue/initialise un client MQTT et configure les callbacks                                                     */
@@ -252,14 +255,15 @@ end:
  struct ABLS_MQTT *Mqtt_init ( const gchar *log_facility, const gchar *log_prefixe, const gchar *client_id,
                                gboolean is_ssl, const gchar *ca_file, const gchar *ca_path,
                                const gchar *username, const gchar *password, const gchar *hostname, gint port, gint qos )
-  { gint retour;
+  { const gchar *resolved_ca_file = ca_file;
+    const gchar *resolved_ca_path = ca_path;
 
     if (!log_facility) log_facility = "mqtt";
 
-    if (!cafile) cafile = Mqtt_default_ca_file();
-    if (!capath) capath = Mqtt_default_ca_path();
+    if (!resolved_ca_file) resolved_ca_file = Mqtt_default_ca_file();
+    if (!resolved_ca_path) resolved_ca_path = Mqtt_default_ca_path();
 
-    if (is_ssl && !ca_file && !ca_path)
+    if (is_ssl && !resolved_ca_file && !resolved_ca_path)
      { Info( __func__, log_facility, log_prefixe, LOG_ERR, "MQTT TLS setup error: no CA file or CA path found." );
        return(NULL);
      }
@@ -280,7 +284,7 @@ end:
     mqtt->queue        = g_async_queue_new_full( (GDestroyNotify)Json_unref );
     mqtt->subscribed_topics = NULL;
     g_rw_lock_init(&mqtt->subscribed_topics_lock);
-    
+
     mqtt->MOSQ_session = mosquitto_new( client_id, TRUE, mqtt );
     if (!mqtt->MOSQ_session)
      { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ERR, "Cannot create mosquitto session." );
@@ -295,18 +299,19 @@ end:
     mosquitto_reconnect_delay_set     ( mqtt->MOSQ_session, 10, 60, TRUE );
 
     if (is_ssl)
-     { gint retour_tls = mosquitto_tls_set( mqtt->MOSQ_session, ca_file, ca_path, NULL, NULL, NULL );
+     { gint retour_tls = mosquitto_tls_set( mqtt->MOSQ_session, resolved_ca_file, resolved_ca_path, NULL, NULL, NULL );
        if ( retour_tls != MOSQ_ERR_SUCCESS )
         { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ERR, "MQTT TLS setup error: %s", mosquitto_strerror(retour_tls) );
           Mqtt_stop (mqtt);
           return(NULL);
         }
        Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_INFO, "MQTT TLS trust store: cafile='%s', capath='%s'",
-             ca_file ? ca_file : "", ca_path ? ca_path : "" );
+             resolved_ca_file ? resolved_ca_file : "", resolved_ca_path ? resolved_ca_path : "" );
      }
 
     if (username)
      { mosquitto_username_pw_set( mqtt->MOSQ_session, username, password ); }
+    mqtt->next_top_connect = time(NULL) + ABLS_MQTT_RECONNECT_DELAY;
     return(mqtt);
   }
 /******************************************************************************************************************************/
@@ -337,13 +342,16 @@ end:
 /* Sortie: Néant                                                                                                              */
 /******************************************************************************************************************************/
  void Mqtt_stop ( struct ABLS_MQTT *mqtt )
-  { mosquitto_disconnect( mqtt->MOSQ_session );
-    mosquitto_loop_stop( mqtt->MOSQ_session, FALSE );
-    mosquitto_destroy( mqtt->MOSQ_session );
-    mqtt->MOSQ_session = NULL;
+  { if (!mqtt) return;
+    if (mqtt->MOSQ_session)
+     { mosquitto_disconnect( mqtt->MOSQ_session );
+       mosquitto_loop_stop( mqtt->MOSQ_session, FALSE );
+       mosquitto_destroy( mqtt->MOSQ_session );
+       mqtt->MOSQ_session = NULL;
+     }
     if (mqtt->queue) g_async_queue_unref(mqtt->queue);        /* Fait automatiquement json_unref sur les éléments de la queue */
     if (mqtt->subscribed_topics) g_slist_free_full(mqtt->subscribed_topics, g_free);
-    g_rwlock_clear(&mqtt->subscribed_topics_lock);
+    g_rw_lock_clear(&mqtt->subscribed_topics_lock);
     Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_NOTICE, "Disconnected from %s with id %s on %s:%d.",
           mqtt->username, mqtt->client_id, mqtt->hostname, mqtt->port );
     g_free(mqtt);

@@ -25,7 +25,7 @@
  * Boston, MA  02110-1301  USA
  */
 
- #include "info.h"
+ #include "abls-libs.h"
 
 /*-- Variables internes (thread-safe) ----------------------------------------*/
  static gint    Nbr_log_sent    = 0;

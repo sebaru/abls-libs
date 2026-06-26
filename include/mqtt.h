@@ -36,12 +36,12 @@
 
  struct ABLS_MQTT
   { struct mosquitto *MOSQ_session;
-    gchar *log_facility;
-    gchar *log_prefixe;
-    gchar *client_id;
-    gchar *hostname;
-    gchar *username;
-    gchar *password;
+    const gchar *log_facility;
+    const gchar *log_prefixe;
+    const gchar *client_id;
+    const gchar *hostname;
+    const gchar *username;
+    const gchar *password;
     gint   port;
     gboolean connected;
     gint next_top_connect;
@@ -59,7 +59,7 @@
  extern gboolean Mqtt_start ( struct ABLS_MQTT *mqtt );
  extern void Mqtt_stop      ( struct ABLS_MQTT *mqtt );
  extern void Mqtt_subscribe ( struct ABLS_MQTT *mqtt, gchar *format, ... );
- extern void Mqtt_unsubscribe ( struct ABLS_MQTT *mqtt, gchar *format, ... );  
+ extern void Mqtt_unsubscribe ( struct ABLS_MQTT *mqtt, gchar *format, ... );
  extern void Mqtt_send_message     ( struct ABLS_MQTT *mqtt, JsonNode *node, gboolean retain, gchar *topic, ... );
  extern JsonNode *Mqtt_get_message ( struct ABLS_MQTT *mqtt );
 
