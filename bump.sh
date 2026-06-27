@@ -21,10 +21,11 @@ Behavior:
   - Creates annotated tag v<version>
   - Creates main from trunk if missing, then merges trunk into main
   - Pushes main and tag to origin
-  - Copies produced RPMs from ABLS-LIBS/build to ABLS-RPMS/repo
+  - Copies produced RPMs from ABLS-LIBS/build to ABLS-RPMS/public/<arch>
 
 Environment:
   - ABLS_RPMS_REPO_DIR: optional destination override for copied RPMs
+    (accepts ABLS-RPMS root or ABLS-RPMS/public)
 EOF
 }
 
@@ -118,7 +119,8 @@ ensure_tag_absent() {
 
 copy_rpms_to_abls_rpms_repo() {
   local build_dir="$PROJECT_DIR/build"
-  local target_repo_root="${ABLS_RPMS_REPO_DIR:-$WORKSPACE_DIR/ABLS-RPMS/repo}"
+  local target_repo_root="${ABLS_RPMS_REPO_DIR:-$WORKSPACE_DIR/ABLS-RPMS}"
+  local target_public_dir=""
   local found=false
 
   if [[ ! -d "$build_dir" ]]; then
@@ -130,6 +132,13 @@ copy_rpms_to_abls_rpms_repo() {
     echo "Warning: RPM target directory not found: $target_repo_root"
     echo "Hint: set ABLS_RPMS_REPO_DIR to override destination"
     return 0
+  fi
+
+  # Accept either ABLS-RPMS root or ABLS-RPMS/public as destination.
+  if [[ -d "$target_repo_root/public" ]]; then
+    target_public_dir="$target_repo_root/public"
+  else
+    target_public_dir="$target_repo_root"
   fi
 
   shopt -s nullglob
@@ -146,9 +155,9 @@ copy_rpms_to_abls_rpms_repo() {
     local arch
     arch="$(rpm -qp --qf '%{ARCH}' "$rpm" 2>/dev/null || true)"
 
-    local target_dir="$target_repo_root"
-    if [[ -n "$arch" && -d "$target_repo_root/$arch" ]]; then
-      target_dir="$target_repo_root/$arch"
+    local target_dir="$target_public_dir"
+    if [[ -n "$arch" ]]; then
+      target_dir="$target_public_dir/$arch"
     fi
 
     run_cmd "mkdir -p '$target_dir'"
@@ -156,7 +165,7 @@ copy_rpms_to_abls_rpms_repo() {
   done
 
   if [[ "$found" == "true" ]]; then
-    echo "RPM files copied to $target_repo_root"
+    echo "RPM files copied to $target_public_dir"
   fi
 }
 
