@@ -33,11 +33,13 @@ echo "Project directory: $PROJECT_DIR"
 echo "Build directory:   $BUILD_DIR"
 echo "Package-only mode: $PACKAGE_ONLY"
 echo "Signing mode:      $([[ "$NO_SIGN" == "true" ]] && echo disabled || echo enabled)"
+echo "Install prefix:    /usr (forced for RPM packaging)"
 
 mkdir -p "$BUILD_DIR"
 
+cmake -S "$PROJECT_DIR" -B "$BUILD_DIR" -DCMAKE_INSTALL_PREFIX=/usr
+
 if [[ "$PACKAGE_ONLY" == "false" ]]; then
-  cmake -S "$PROJECT_DIR" -B "$BUILD_DIR"
   cmake --build "$BUILD_DIR" -- -j"$(nproc)"
 elif [[ ! -f "$BUILD_DIR/CPackConfig.cmake" ]]; then
   echo "Missing $BUILD_DIR/CPackConfig.cmake. Run ./build.sh first or use full mode."
