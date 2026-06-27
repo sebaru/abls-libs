@@ -115,12 +115,12 @@ void Info ( const gchar *function, const gchar *facility, const gchar *prefixe, 
 
     prctl ( PR_GET_NAME, &nom_thread, 0, 0, 0 );
     g_snprintf ( resultat, sizeof(resultat), "{ \"thread\": \"%s\", ", nom_thread );
-    if (Prefixe_name && prefixe)
-     { g_snprintf ( chaine, sizeof(chaine), "\"%s\": \"%s\", ", Prefixe_name, prefixe );
-       g_strlcat ( resultat, chaine, sizeof(resultat) );
-     }
     if (facility)
      { g_snprintf ( chaine, sizeof(chaine), "\"facility\": \"%s\", ", facility );
+       g_strlcat ( resultat, chaine, sizeof(resultat) );
+     }
+    if (Prefixe_name && prefixe)
+     { g_snprintf ( chaine, sizeof(chaine), "\"%s\": \"%s\", ", Prefixe_name, prefixe );
        g_strlcat ( resultat, chaine, sizeof(resultat) );
      }
     if (function)
