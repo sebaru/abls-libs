@@ -118,7 +118,7 @@ ensure_tag_absent() {
 
 copy_rpms_to_abls_rpms_repo() {
   local build_dir="$PROJECT_DIR/build"
-  local target_repo_root="${ABLS_RPMS_REPO_DIR:-$WORKSPACE_DIR/ABLS-RPMS/repo}"
+  local target_repo_root="${ABLS_RPMS_REPO_DIR:-$WORKSPACE_DIR/ABLS-RPMS}"
   local found=false
 
   if [[ ! -d "$build_dir" ]]; then
