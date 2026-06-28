@@ -233,6 +233,29 @@ Produit:
 - `abls-libs-X.Y.Z-1.rpm` (runtime)
 - `abls-libs-devel-X.Y.Z-1.rpm` (headers + pkg-config)
 
+## Packaging DEB (Debian/Raspberry)
+
+Install dependencies:
+
+```sh
+sudo ./install_deps.sh
+```
+
+Build DEB packages:
+
+```sh
+./build_apt.sh --dist bookworm
+```
+
+Generated packages:
+
+- `abls-libs_VERSION_ARCH.deb` (runtime)
+- `abls-libs-dev_VERSION_ARCH.deb` (headers + pkg-config)
+
+Artifacts are copied to:
+
+- `build/deb/<suite>/<arch>/`
+
 ## Install depuis GitHub Release
 
 ```sh

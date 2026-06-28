@@ -99,7 +99,7 @@ install(FILES ${CMAKE_BINARY_DIR}/abls-libs.pc
 )
 
 ##################################################################################################################################
-# CPack — packaging RPM
+# CPack — packaging RPM/DEB
 ##################################################################################################################################
 set(CPACK_PACKAGE_NAME        "abls-libs")
 set(CPACK_PACKAGE_VERSION     "${PROJECT_VERSION}")
@@ -109,8 +109,9 @@ set(CPACK_PACKAGE_CONTACT     "sebastien.lefevre@abls-habitat.fr")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_DESCRIPTION}")
 set(CPACK_PACKAGE_LICENSE     "GPLv3")
 
-set(CPACK_GENERATOR           "RPM")
+set(CPACK_GENERATOR           "RPM;DEB")
 set(CPACK_RPM_COMPONENT_INSTALL ON)
+set(CPACK_DEB_COMPONENT_INSTALL ON)
 set(CPACK_COMPONENTS_ALL      runtime devel)
 
 # Package runtime
@@ -126,5 +127,14 @@ set(CPACK_RPM_DEVEL_PACKAGE_NAME    "abls-libs-devel")
 set(CPACK_RPM_DEVEL_PACKAGE_SUMMARY "Abls-Habitat shared library (development files)")
 set(CPACK_RPM_DEVEL_PACKAGE_REQUIRES "abls-libs = ${PROJECT_VERSION}, glib2-devel, json-glib-devel")
 set(CPACK_RPM_DEVEL_FILE_NAME "RPM-DEFAULT")
+
+# Package runtime (DEB)
+set(CPACK_DEBIAN_RUNTIME_PACKAGE_NAME "abls-libs")
+set(CPACK_DEBIAN_RUNTIME_PACKAGE_DEPENDS "libglib2.0-0, libjson-glib-1.0-0, libmosquitto1")
+set(CPACK_DEBIAN_RUNTIME_PACKAGE_SHLIBDEPS ON)
+
+# Package devel (DEB)
+set(CPACK_DEBIAN_DEVEL_PACKAGE_NAME "abls-libs-dev")
+set(CPACK_DEBIAN_DEVEL_PACKAGE_DEPENDS "abls-libs, libglib2.0-dev, libjson-glib-dev, libmosquitto-dev")
 
 include(CPack)
