@@ -1,0 +1,25 @@
+## Allows the group abls to execute these commands
+%abls  ALL=(ALL) NOPASSWD: /usr/bin/apt update -y
+%abls  ALL=(ALL) NOPASSWD: /usr/bin/apt upgrade -y
+%abls  ALL=(ALL) NOPASSWD: /usr/sbin/poweroff
+%abls  ALL=(ALL) NOPASSWD: /usr/sbin/reboot
+## Command for Agents
+%abls  ALL=(ALL) NOPASSWD: /usr/bin/dnf upgrade -y ^abls-[a-z0-9-]+$
+%abls  ALL=(ALL) NOPASSWD: /usr/bin/ldconfig
+%abls  ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop ^abls-[a-z0-9-]+$
+%abls  ALL=(ALL) NOPASSWD: /usr/bin/systemctl start ^abls-[a-z0-9-]+$
+%abls  ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart ^abls-[a-z0-9-]+$
+%abls  ALL=(ALL) NOPASSWD: /usr/bin/journalctl -f -u ^abls-[a-z0-9-]+$
+
+##To be deleted when possible.
+%abls  ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop Watchdogd
+%abls  ALL=(ALL) NOPASSWD: /usr/bin/systemctl start Watchdogd
+%abls  ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart Watchdogd
+%abls  ALL=(ALL) NOPASSWD: /usr/bin/systemctl daemon-reload
+%abls  ALL=(ALL) NOPASSWD: /usr/bin/Watchdogd
+%abls  ALL=(ALL) NOPASSWD: /usr/local/bin/Watchdogd
+%abls  ALL=(ALL) NOPASSWD: /usr/bin/killall Watchdogd
+%abls  ALL=(ALL) NOPASSWD: /usr/bin/journalctl -f -u Watchdogd
+%abls  ALL=(ALL) NOPASSWD: /usr/bin/journalctl -f -u Watchdogd.service
+
+Defaults:%abls !requiretty
