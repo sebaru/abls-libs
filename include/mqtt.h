@@ -58,6 +58,7 @@
                                            const gchar *hostname, gint port, gint qos );
  extern gboolean Mqtt_start ( struct ABLS_MQTT *mqtt );
  extern void Mqtt_stop      ( struct ABLS_MQTT *mqtt );
+ extern gboolean Mqtt_is_connected ( struct ABLS_MQTT *mqtt );
  extern void Mqtt_subscribe ( struct ABLS_MQTT *mqtt, gchar *format, ... );
  extern void Mqtt_unsubscribe ( struct ABLS_MQTT *mqtt, gchar *format, ... );
  /* Mqtt_topic_is: compare mqtt_topic_lvlX a une liste de niveaux; un niveau attendu NULL est ignore */
