@@ -65,6 +65,33 @@
     return(NULL);
   }
 /******************************************************************************************************************************/
+/* Mqtt_topic_is: Compare les niveaux mqtt_topic_lvlX d'un JsonNode avec une liste variadique                                 */
+/* Entrées: request, le nombre de niveaux attendus, puis les niveaux attendus (NULL = wildcard/ignore ce niveau)              */
+/* Sortie : TRUE si tous les niveaux non-NULL correspondent, FALSE sinon                                                      */
+/******************************************************************************************************************************/
+ gboolean Mqtt_topic_is ( JsonNode *request, gint level_count, ... )
+  { va_list ap;
+
+    if (!request || level_count <= 0) return(FALSE);
+
+    va_start(ap, level_count);
+    for (gint i = 0; i < level_count; i++)
+     { const gchar *expected = va_arg(ap, const gchar *);
+       if (!expected) continue;
+
+       gchar name[32];
+       g_snprintf ( name, sizeof(name), "mqtt_topic_lvl%d", i );
+       const gchar *received = Json_get_string ( request, name );
+
+       if ( g_strcmp0 ( received, expected ) )
+        { va_end(ap);
+          return(FALSE);
+        }
+     }
+    va_end(ap);
+    return(TRUE);
+  }
+/******************************************************************************************************************************/
 /* Mqtt_subscribe: Abonne le client MQTT à un topic spécifique                                                                */
 /* Entrées: le client MQTT, le topic à abonner                                                                                */
 /* Sortie : Néant                                                                                                             */

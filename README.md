@@ -195,6 +195,8 @@ void Mqtt_stop(struct ABLS_MQTT *mqtt);
 void Mqtt_subscribe(struct ABLS_MQTT *mqtt, gchar *format, ...);
 void Mqtt_unsubscribe(struct ABLS_MQTT *mqtt, gchar *format, ...);
 
+gboolean Mqtt_topic_is(JsonNode *request, gint level_count, ...);
+
 void Mqtt_send_message(struct ABLS_MQTT *mqtt, JsonNode *node,
                                              gboolean retain, gchar *topic, ...);
 JsonNode *Mqtt_get_message(struct ABLS_MQTT *mqtt);
@@ -205,8 +207,20 @@ JsonNode *Mqtt_get_message(struct ABLS_MQTT *mqtt);
 - `Mqtt_init` prepare la session et configure les callbacks mosquitto.
 - `Mqtt_start` connecte au broker puis demarre la boucle asynchrone.
 - `Mqtt_subscribe` et `Mqtt_unsubscribe` manipulent une liste de topics protegee par lock.
+- `Mqtt_topic_is` compare dynamiquement les `mqtt_topic_lvlX` d'un message avec une liste de niveaux attendus.
 - `Mqtt_get_message` lit la file de reception sans blocage.
 - `Mqtt_send_message` publie un payload JSON et peut conserver en file les messages en echec de publication.
+
+`Mqtt_topic_is` est strict pour chaque niveau non `NULL` (egalite exacte), et ignore les niveaux passes a `NULL`.
+
+Exemple:
+
+```c
+/* Controle lvl0 et lvl2, ignore lvl1 */
+if (Mqtt_topic_is(msg, 3, "shellies", NULL, "status")) {
+    /* ... */
+}
+```
 
 ### Notes importantes
 
@@ -232,6 +246,29 @@ Produit:
 
 - `abls-libs-X.Y.Z-1.rpm` (runtime)
 - `abls-libs-devel-X.Y.Z-1.rpm` (headers + pkg-config)
+
+## Packaging DEB (Debian/Raspberry)
+
+Install dependencies:
+
+```sh
+sudo ./install_deps.sh
+```
+
+Build DEB packages:
+
+```sh
+./build_apt.sh --dist bookworm
+```
+
+Generated packages:
+
+- `abls-libs_VERSION_ARCH.deb` (runtime)
+- `abls-libs-dev_VERSION_ARCH.deb` (headers + pkg-config)
+
+Artifacts are copied to:
+
+- `build/deb/<suite>/<arch>/`
 
 ## Install depuis GitHub Release
 
