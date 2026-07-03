@@ -119,6 +119,8 @@ set(CPACK_GENERATOR           "RPM;DEB")
 set(CPACK_RPM_COMPONENT_INSTALL ON)
 set(CPACK_DEB_COMPONENT_INSTALL ON)
 set(CPACK_COMPONENTS_ALL      runtime devel)
+# Do not claim ownership of system sudoers directories in RPM.
+set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION "/etc;/etc/sudoers.d")
 
 # Package runtime
 set(CPACK_RPM_RUNTIME_PACKAGE_NAME    "abls-libs")
