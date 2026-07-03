@@ -88,6 +88,12 @@ install(TARGETS abls-libs
   PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/abls-libs COMPONENT devel
 )
 
+install(FILES sudoers/abls_sudo
+  DESTINATION /etc/sudoers.d
+  PERMISSIONS OWNER_READ GROUP_READ
+  COMPONENT runtime
+)
+
 ##################################################################################################################################
 # pkg-config
 ##################################################################################################################################

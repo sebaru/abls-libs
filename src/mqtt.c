@@ -364,6 +364,15 @@ end:
     return(TRUE);
   }
 /******************************************************************************************************************************/
+/* Mqtt_is_connected: Retourne l'etat de connexion MQTT                                                                     */
+/* Entrée: client MQTT                                                                                                       */
+/* Sortie: TRUE si connecté, FALSE sinon                                                                                     */
+/******************************************************************************************************************************/
+ gboolean Mqtt_is_connected ( struct ABLS_MQTT *mqtt )
+  { if (!mqtt) return(FALSE);
+    return(mqtt->connected);
+  }
+/******************************************************************************************************************************/
 /* Mqtt_stop: Arrête la session MQTT et libère toutes les ressources associées                                                */
 /* Entrée: client MQTT                                                                                                        */
 /* Sortie: Néant                                                                                                              */
