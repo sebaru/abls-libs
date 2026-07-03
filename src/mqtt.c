@@ -77,13 +77,13 @@
     va_start(ap, level_count);
     for (gint i = 0; i < level_count; i++)
      { const gchar *expected = va_arg(ap, const gchar *);
-       if (!expected) continue;
+       if (!expected || !g_strcmp0(expected, "+") == 0) continue;   /* Si attendu est NUL ou "+", on ne controle pas ce champ */
 
        gchar name[32];
        g_snprintf ( name, sizeof(name), "mqtt_topic_lvl%d", i );
-       const gchar *received = Json_get_string ( request, name );
+       const gchar *received = Json_get_string ( request, name );                         /* Récupération du level i du topic */
 
-       if ( g_strcmp0 ( received, expected ) )
+       if (!received || g_strcmp0 ( received, expected ) )                    /* Si erreur ou différent de l'attendu, on sort */
         { va_end(ap);
           return(FALSE);
         }
