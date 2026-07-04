@@ -397,48 +397,4 @@ end:
 /******************************************************************************************************************************/
   void Json_unref ( JsonNode *RootNode )
   { if (RootNode) json_node_unref ( RootNode ); }
-/******************************************************************************************************************************/
-/* Json_read_config: Recupere un ficher de config, rempli les manques avec l'environnement, ou applique une valeur par defaut */
-/* Entrée: le nom de fichier, le JsonNode des défauts                                                                         */
-/* Sortie: un nouveau buffer JsonNode qui reunit le meilleur des 3 mondes (env, file, default)                                */
-/******************************************************************************************************************************/
- void Json_read_config ( gchar *filename, JsonNode *target )
-  { const char *name;
-    JsonObjectIter iter;
-    JsonNode *ObjectMemberNode;
-    Info ( __func__, "json", NULL, LOG_NOTICE, "Trying to read config file '%s'", filename );
-    JsonNode *from_file = Json_read_from_file ( filename );
-    if (from_file)                                                              /* Copy des elements de from_file vers target */
-     { JsonObject *fromFileObject = json_node_get_object(from_file);                        /* Récupération de l'objet source */
-       json_object_iter_init(&iter, fromFileObject);
-       while (json_object_iter_next(&iter, &name, &ObjectMemberNode))
-        { Json_copy_member_into ( from_file, name, target ); }
-       Json_unref( from_file );
-     } else Info ( __func__, FACILITY_JSON, NULL, LOG_WARNING, "Unable to read file config '%s'", filename );
-
-    Info ( __func__, FACILITY_JSON, NULL, LOG_NOTICE, "Apply ENVironment Variables" );
-    gchar **env_vars = g_listenv();                                       /* Récupérer la liste des variables d'environnement */
-    for (gchar **env = env_vars; *env != NULL; env++)                                       /* Parcourir toutes les variables */
-     { gchar *prefixe = "ABLS_";
-       if (g_str_has_prefix(*env, prefixe))                                   /* Vérifier si la variable commence par "ABLS_" */
-        { const gchar *valeur = g_getenv ( *env );                                                       /* Extrait la valeur */
-          if (valeur)
-           { gchar *env_name = g_ascii_strdown( *env + strlen(prefixe), -1 );                         /* Passage en lowercase */
-             Info ( __func__, FACILITY_JSON, NULL, LOG_NOTICE, "Apply ENV '%s' -> '%s' = '%s'", *env, env_name, valeur );
-             if ( !strcasecmp ( valeur, "TRUE" ) )
-              { Json_add_bool ( target, env_name, TRUE ); }
-             else if ( !strcasecmp ( valeur, "FALSE" ) )
-              { Json_add_bool ( target, env_name, FALSE ); }
-             else
-              { gchar *endptr = NULL;                 /* Convert only strict integers; keep values like 127.0.0.1 as strings. */
-                g_ascii_strtoll ( valeur, &endptr, 10 );
-                if (endptr && *endptr == '\0' && endptr != valeur)
-                 { Json_add_int  ( target, env_name, atoi(valeur) ); }
-                else Json_add_string ( target, env_name, valeur );                   /* Sinon d'une chaine de caracteres */
-              }
-             g_free(env_name);
-           }
-        }
-     }
-  }
 /*----------------------------------------------------------------------------------------------------------------------------*/

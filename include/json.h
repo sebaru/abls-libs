@@ -73,7 +73,6 @@
 /*-- Lecture de fichier / configuration --------------------------------------------------------------------------------------*/
  extern JsonNode  *Json_read_from_file          ( gchar *filename );
  extern gboolean   Json_write_to_file           ( gchar *filename, JsonNode *RootNode );
- extern void       Json_read_config             ( gchar *filename, JsonNode *target );
 
 #endif /* _ABLS_JSON_H_ */
 /*----------------------------------------------------------------------------------------------------------------------------*/
