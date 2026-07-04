@@ -151,13 +151,101 @@ Fichiers:
 ```c
 JsonNode *Json_read_from_file(gchar *filename);
 gboolean Json_write_to_file(gchar *filename, JsonNode *RootNode);
-void Json_read_config(gchar *filename, JsonNode *target);
 ```
 
 ### Regles de memoire
 
 - `Json_create` et `Json_get_from_string` retournent un node a liberer avec `Json_unref`.
 - `Json_to_string` retourne une chaine allouee a liberer avec `g_free`.
+
+## Module Config
+
+Header: `include/config.h`
+
+Objectif: charger et fusionner configuration depuis 3 sources: fichier JSON, variables d'environnement (`ABLS_*`), et arguments de ligne de commande (via `GOptionContext`).
+
+### API publique
+
+```c
+void Config_apply_FILE(JsonNode *target, const gchar *filename);
+void Config_apply_ENV(JsonNode *target);
+void Config_apply_ARGV(JsonNode *target, int *argc, char ***argv, GOptionEntry *entries);
+```
+
+### Comportement
+
+- `Config_apply_FILE` charge un fichier JSON et injecte ses membres dans `target` (écrase les clés existantes).
+- `Config_apply_ENV` scanne les variables d'environnement prefixées par `ABLS_` (minuscule apres prefixe dans JSON), avec type-inference (bool/int/string).
+- `Config_apply_ARGV` parse `argc`/`argv` via `GOptionContext` avec les entries fournis.
+
+### Regles de memoire
+
+- Fonctions acceptent `target=NULL` en argument et retournent sans effet (safe).
+- Pas d'allocation dynamique de retour (void).
+- Erreurs loguees via `Info` (facility="config").
+
+### Exemple d'usage
+
+**Cas 1 : Config FILE + ENV (sans options CLI)**:
+
+```c
+#include <abls-libs/config.h>
+#include <abls-libs/json.h>
+
+int main(void)
+{
+    JsonNode *cfg = Json_create();
+
+    /* Charger depuis fichier */
+    Config_apply_FILE(cfg, "/etc/app/config.json");
+
+    /* Surcharger avec variables d'environnement (ABLS_*) */
+    Config_apply_ENV(cfg);
+
+    /* Utiliser cfg... */
+    gchar *json_str = Json_to_string(cfg);
+    g_print("%s\n", json_str);
+    g_free(json_str);
+
+    Json_unref(cfg);
+    return 0;
+}
+```
+
+**Cas 2 : Config FILE + ENV + ARGV (injection JSON)**:
+
+```c
+#include <abls-libs/config.h>
+#include <abls-libs/json.h>
+
+int main(int argc, char **argv)
+{
+    JsonNode *cfg = Json_create();
+
+    Config_apply_FILE(cfg, "/etc/app/config.json");
+    Config_apply_ENV(cfg);
+
+    /* Options CLI avec injection directe dans JSON via callback */
+    GOptionEntry entries[] = {
+        { "verbose", 'v', 0, G_OPTION_ARG_CALLBACK,
+          (gpointer)Config_argv_callback, "Verbose mode", NULL },
+        { "port", 'p', 0, G_OPTION_ARG_CALLBACK,
+          (gpointer)Config_argv_callback, "TCP port", "PORT" },
+        { NULL }
+    };
+
+    Config_apply_ARGV(cfg, &argc, &argv, entries);
+
+    gchar *json_str = Json_to_string(cfg);
+    g_print("%s\n", json_str);
+    g_free(json_str);
+
+    Json_unref(cfg);
+    return 0;
+}
+```
+
+**Note**: Le callback `Config_argv_callback` injecte automatiquement les valeurs dans `target` si configuré correctement. L'ordre typiqu est: FILE → ENV → ARGV (chaque étape surcharge la précédente).
 - Les accesseurs `Json_get_*` retournent des valeurs liees au `JsonNode` source (ne pas liberer les pointeurs retournes).
 
 ### Exemple
