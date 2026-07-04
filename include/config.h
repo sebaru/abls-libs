@@ -41,9 +41,10 @@ typedef struct {
 } ConfigArgvCtx;
 
  extern gboolean Config_argv_callback( const gchar *option_name, const gchar *value, gpointer data, GError **error);
+ extern void Config_add_parameter ( const gchar *name, const gchar *description );
  extern void Config_apply_FILE  ( JsonNode *target, const gchar *filename );
  extern void Config_apply_ENV   ( JsonNode *target );
- extern void Config_apply_ARGV  ( JsonNode *target, int *argc, char ***argv, GOptionEntry *entries );
+ extern void Config_apply_ARGV  ( JsonNode *target, int *argc, char ***argv );
 
 #endif /* _ABLS_CONFIG_H_ */
 /*----------------------------------------------------------------------------------------------------------------------------*/

@@ -169,20 +169,24 @@ Objectif: charger et fusionner configuration depuis 3 sources: fichier JSON, var
 ```c
 void Config_apply_FILE(JsonNode *target, const gchar *filename);
 void Config_apply_ENV(JsonNode *target);
-void Config_apply_ARGV(JsonNode *target, int *argc, char ***argv, GOptionEntry *entries);
+void Config_add_parameter(const gchar *name, const gchar *description);
+void Config_apply_ARGV(JsonNode *target, int *argc, char ***argv);
 ```
 
 ### Comportement
 
 - `Config_apply_FILE` charge un fichier JSON et injecte ses membres dans `target` (écrase les clés existantes).
 - `Config_apply_ENV` scanne les variables d'environnement prefixées par `ABLS_` (minuscule apres prefixe dans JSON), avec type-inference (bool/int/string).
-- `Config_apply_ARGV` parse `argc`/`argv` via `GOptionContext` avec les entries fournis.
+- `Config_add_parameter` enregistre dynamiquement les options CLI a accepter en conservant les pointeurs `name` et `description` fournis par l'appelant (pas de duplication).
+- `Config_apply_ARGV` reconstruit un tableau `GOptionEntry` temporaire via `GOptionContext`, parse `argc`/`argv`, puis libere ce tableau.
 
 ### Regles de memoire
 
 - Fonctions acceptent `target=NULL` en argument et retournent sans effet (safe).
 - Pas d'allocation dynamique de retour (void).
 - Erreurs loguees via `Info` (facility="config").
+- L'appelant conserve la propriete de `name` et `description` passes a `Config_add_parameter`; ces chaines doivent rester valides jusqu'a l'appel de `Config_apply_ARGV`.
+- `Config_apply_ARGV` vide le registre interne des parametres, mais ne libere pas les chaines de l'appelant.
 
 ### Exemple d'usage
 
@@ -225,16 +229,11 @@ int main(int argc, char **argv)
     Config_apply_FILE(cfg, "/etc/app/config.json");
     Config_apply_ENV(cfg);
 
-    /* Options CLI avec injection directe dans JSON via callback */
-    GOptionEntry entries[] = {
-        { "verbose", 'v', 0, G_OPTION_ARG_CALLBACK,
-          (gpointer)Config_argv_callback, "Verbose mode", NULL },
-        { "port", 'p', 0, G_OPTION_ARG_CALLBACK,
-          (gpointer)Config_argv_callback, "TCP port", "PORT" },
-        { NULL }
-    };
+        /* Options CLI enregistrees dynamiquement avant le parsing */
+        Config_add_parameter("verbose", "Verbose mode");
+        Config_add_parameter("port", "TCP port");
 
-    Config_apply_ARGV(cfg, &argc, &argv, entries);
+        Config_apply_ARGV(cfg, &argc, &argv);
 
     gchar *json_str = Json_to_string(cfg);
     g_print("%s\n", json_str);
@@ -245,7 +244,7 @@ int main(int argc, char **argv)
 }
 ```
 
-**Note**: Le callback `Config_argv_callback` injecte automatiquement les valeurs dans `target` si configuré correctement. L'ordre typiqu est: FILE → ENV → ARGV (chaque étape surcharge la précédente).
+**Note**: Le callback `Config_argv_callback` injecte automatiquement les valeurs dans `target` si configuré correctement. Les parametres enregistres via `Config_add_parameter(...)` sont consommes par `Config_apply_ARGV(...)`, qui libere uniquement ses structures internes. L'ordre typique est: FILE → ENV → ARGV (chaque étape surcharge la précédente).
 - Les accesseurs `Json_get_*` retournent des valeurs liees au `JsonNode` source (ne pas liberer les pointeurs retournes).
 
 ### Exemple
