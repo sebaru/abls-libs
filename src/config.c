@@ -202,7 +202,7 @@
 /* Sortie: néant (GError loggue si parsing echoue)                                                                            */
 /* NOTE: Les options sont construites dynamiquement depuis le registre Config_add_parameter()                                 */
 /******************************************************************************************************************************/
- void Config_apply_ARGV ( JsonNode *target, int *argc, char ***argv )
+ void Config_apply_ARGV ( JsonNode *target, gint argc, gchar **argv )
   { GOptionContext *ctx = NULL;
     GOptionGroup *group;
     GOptionEntry *entries = NULL;
@@ -214,7 +214,7 @@
        goto end;
      }
 
-    if (!target || !argc || !argv)
+    if (!target || argc <= 0 || !argv)
      { Info ( __func__, FACILITY_CONFIG, NULL, LOG_WARNING, "Invalid ARGV parsing context, skipping" );
        goto end;
      }
@@ -231,7 +231,7 @@
     g_option_group_add_entries ( group, entries );
     g_option_context_set_main_group ( ctx, group );
 
-    if (!g_option_context_parse ( ctx, argc, argv, &error ))                                                        /* Parser */
+    if (!g_option_context_parse ( ctx, &argc, &argv, &error ))                                                      /* Parser */
      { Info ( __func__, FACILITY_CONFIG, NULL, LOG_WARNING, "ARGV parsing failed: %s", error->message );
        goto end;
      }

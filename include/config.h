@@ -44,7 +44,7 @@ typedef struct {
  extern void Config_add_parameter ( const gchar *name, const gchar *description );
  extern void Config_apply_FILE  ( JsonNode *target, const gchar *filename );
  extern void Config_apply_ENV   ( JsonNode *target );
- extern void Config_apply_ARGV  ( JsonNode *target, int *argc, char ***argv );
+ extern void Config_apply_ARGV  ( JsonNode *target, gint argc, gchar **argv );
 
 #endif /* _ABLS_CONFIG_H_ */
 /*----------------------------------------------------------------------------------------------------------------------------*/
