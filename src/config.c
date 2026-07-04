@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
-/* src/config.c         Parsage de configuration depuis FILE, ENV, ARGV — ABLS-LIBS                                          */
-/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                      lun 21 avr 2003 22:06:10 CEST */
+/* src/config.c         Parsage de configuration depuis FILE, ENV, ARGV — ABLS-LIBS                                           */
+/* Projet Abls-Habitat                   Gestion d'habitat                                      sam 04 jul 2026 18:28:10 CEST */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -29,9 +29,6 @@
  #include <strings.h>
  #include "abls-libs.h"
 
-/*-- Prototypes internes ----*/
-/* Aucun prototype interne nécessaire */
-
 /******************************************************************************************************************************/
 /* Config_apply_FILE: Charge configuration depuis fichier JSON                                                                */
 /* Entrée: target (JsonNode à remplir), filename (chemin du fichier)                                                          */
@@ -56,7 +53,7 @@
   }
 
 /******************************************************************************************************************************/
-/* Config_apply_ENV: Applique variables d'environnement ABLS_* dans le JSON target                                           */
+/* Config_apply_ENV: Applique variables d'environnement ABLS_* dans le JSON target                                            */
 /* Entrée: target (JsonNode à remplir)                                                                                        */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
@@ -69,24 +66,22 @@
     if (!target) return;
 
     Info ( __func__, FACILITY_CONFIG, NULL, LOG_NOTICE, "Apply ENVironment Variables" );
-    env_vars = g_listenv();                                       /* Récupérer la liste des variables d'environnement */
-    for (env = env_vars; *env != NULL; env++)                                       /* Parcourir toutes les variables */
+    env_vars = g_listenv();                                               /* Récupérer la liste des variables d'environnement */
+    for (env = env_vars; *env != NULL; env++)                                               /* Parcourir toutes les variables */
      { const gchar *prefixe = "ABLS_";
        if (g_str_has_prefix(*env, prefixe))                                   /* Vérifier si la variable commence par "ABLS_" */
-        { valeur = g_getenv ( *env );                                                       /* Extrait la valeur */
+        { valeur = g_getenv ( *env );                                                                    /* Extrait la valeur */
           if (valeur)
-           { env_name = g_ascii_strdown( *env + strlen(prefixe), -1 );                         /* Passage en lowercase */
+           { env_name = g_ascii_strdown( *env + strlen(prefixe), -1 );                                /* Passage en lowercase */
              Info ( __func__, FACILITY_CONFIG, NULL, LOG_NOTICE, "Apply ENV '%s' -> '%s' = '%s'", *env, env_name, valeur );
-             if ( !strcasecmp ( valeur, "TRUE" ) )
-              { Json_add_bool ( target, env_name, TRUE ); }
-             else if ( !strcasecmp ( valeur, "FALSE" ) )
-              { Json_add_bool ( target, env_name, FALSE ); }
+                  if ( !strcasecmp ( valeur, "TRUE"  ) ) { Json_add_bool ( target, env_name, TRUE ); }
+             else if ( !strcasecmp ( valeur, "FALSE" ) ) { Json_add_bool ( target, env_name, FALSE ); }
              else
               { gchar *endptr = NULL;                 /* Convert only strict integers; keep values like 127.0.0.1 as strings. */
                 g_ascii_strtoll ( valeur, &endptr, 10 );
                 if (endptr && *endptr == '\0' && endptr != valeur)
                  { Json_add_int  ( target, env_name, atoi(valeur) ); }
-                else Json_add_string ( target, env_name, valeur );                   /* Sinon d'une chaine de caracteres */
+                else Json_add_string ( target, env_name, valeur );                        /* Sinon d'une chaine de caracteres */
               }
              g_free(env_name);
            }
@@ -95,95 +90,79 @@
   }
 
 /******************************************************************************************************************************/
-/* Config_argv_callback: Callback public pour injection d'options dans JSON via GOption                                      */
-/* Entrée: option_name, value, data (ConfigArgvCtx*), error                                                                  */
-/* Sortie: TRUE si succès, FALSE + GError si erreur                                                                          */
-/* Usage: À passer comme arg_data dans GOptionEntry avec G_OPTION_ARG_CALLBACK, puis passer via user_data du GOptionGroup  */
+/* Config_argv_callback: Callback public pour injection d'options dans JSON via GOption                                       */
+/* Entrée: option_name, value, data (JsonNode *), error                                                                       */
+/* Sortie: TRUE si succès, FALSE + GError si erreur                                                                           */
+/* Usage: À passer comme arg_data dans GOptionEntry avec G_OPTION_ARG_CALLBACK, puis passer via user_data du GOptionGroup     */
 /******************************************************************************************************************************/
-gboolean Config_argv_callback(const gchar *option_name,
-                              const gchar *value,
-                              gpointer data,
-                              GError **error)
-  { ConfigArgvCtx *ctx = (ConfigArgvCtx *)data;
+ gboolean Config_argv_callback( const gchar *option_name, const gchar *value, gpointer data, GError **error )
+  { JsonNode *target = data;
     const gchar *key;
 
-    if (!ctx || !ctx->json) {
-        g_set_error(error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
-                    "Invalid config context");
-        return FALSE;
-    }
+    if (!target)
+     { g_set_error(error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED, "Invalid config target");
+       return FALSE;
+     }
 
-    /* Extraire le nom de la clé (sans - ou --) */
-    key = option_name;
+    key = option_name;                                                            /* Extraire le nom de la clé (sans - ou --) */
     if (key[0] == '-') key++;
     if (key[0] == '-') key++;
 
     /* Ce callback injecte la valeur directement dans le JSON
      * L'application choisit le nom explicite de la clé dans son GOptionEntry.long_name */
-    if (value) {
-        /* Tentative de conversion en entier ou booléen, sinon string */
-        if (!strcasecmp(value, "true")) {
-            Json_add_bool(ctx->json, (gchar *)key, TRUE);
-        } else if (!strcasecmp(value, "false")) {
-            Json_add_bool(ctx->json, (gchar *)key, FALSE);
-        } else {
-            gchar *endptr = NULL;
-            g_ascii_strtoll(value, &endptr, 10);
-            if (endptr && *endptr == '\0' && endptr != value) {
-                Json_add_int(ctx->json, (gchar *)key, atoi(value));
-            } else {
-                Json_add_string(ctx->json, (gchar *)key, value);
-            }
+    if (value)
+     { if (!strcasecmp(value, "true"))                          /* Tentative de conversion en entier ou booléen, sinon string */
+        { Json_add_bool(target, (gchar *)key, TRUE); }
+       else if (!strcasecmp(value, "false"))
+        { Json_add_bool(target, (gchar *)key, FALSE);}
+       else
+        { gchar *endptr = NULL;
+          g_ascii_strtoll(value, &endptr, 10);
+          if (endptr && *endptr == '\0' && endptr != value)
+           { Json_add_int(target, (gchar *)key, atoi(value)); }
+          else
+           { Json_add_string(target, (gchar *)key, value); }
         }
-        Info ( __func__, FACILITY_CONFIG, NULL, LOG_NOTICE, "Apply ARGV '--%s' = '%s'", key, value );
-    } else {
-        /* Option sans argument (flag) → booléen TRUE */
-        Json_add_bool(ctx->json, (gchar *)key, TRUE);
-        Info ( __func__, FACILITY_CONFIG, NULL, LOG_NOTICE, "Apply ARGV '--%s' (flag)", key );
-    }
-
+       Info ( __func__, FACILITY_CONFIG, NULL, LOG_DEBUG, "Apply ARGV '--%s' = '%s'", key, value );
+     }
+    else
+     { Json_add_bool(target, (gchar *)key, TRUE);                               /* Option sans argument (flag) → booléen TRUE */
+       Info ( __func__, FACILITY_CONFIG, NULL, LOG_DEBUG, "Apply ARGV '--%s' (flag)", key );
+     }
     return TRUE;
   }
-
 /******************************************************************************************************************************/
-/* Config_apply_ARGV: Parse argc/argv via GOptionContext                                                                     */
-/* Entrée: target (JsonNode à remplir), argc/argv pointers, entries (tableau GOptionEntry)                                  */
-/* Sortie: néant (GError loggué si parsing échoue)                                                                           */
-/* NOTE: Pour injecter automatiquement dans JSON, les entries doivent avoir:                                                 */
-/*       - arg = G_OPTION_ARG_CALLBACK                                                                                       */
-/*       - arg_data = Config_argv_callback                                                                                   */
-/*       - user_data du GOptionGroup doit pointer vers ConfigArgvCtx* avec json rempli de target                             */
-/*       Passer entries=NULL pour skip ARGV parsing. Sinon, l'appelant gère le remplissage du JSON après parsing.           */
+/* Config_apply_ARGV: Parse argc/argv via GOptionContext                                                                      */
+/* Entrée: target (JsonNode à remplir), argc/argv pointers, entries (tableau GOptionEntry)                                    */
+/* Sortie: néant (GError loggué si parsing échoue)                                                                            */
+/* NOTE: Pour injecter automatiquement dans JSON, les entries doivent avoir:                                                  */
+/*       - arg = G_OPTION_ARG_CALLBACK                                                                                        */
+/*       - arg_data = Config_argv_callback                                                                                    */
+/*       - user_data du GOptionGroup doit pointer vers le JsonNode de target                                                  */
 /******************************************************************************************************************************/
  void Config_apply_ARGV ( JsonNode *target, int *argc, char ***argv, GOptionEntry *entries )
   { GOptionContext *ctx;
     GOptionGroup *group;
     GError *error = NULL;
 
-    if (!target || !argc || !argv) {
-        return;
-    }
+    if (!target || !argc || !argv) return;
 
-    if (!entries) {
-        Info ( __func__, FACILITY_CONFIG, NULL, LOG_DEBUG, "Config_apply_ARGV: entries is NULL, skipping ARGV parsing" );
-        return;
-    }
+    if (!entries)
+     { Info ( __func__, FACILITY_CONFIG, NULL, LOG_DEBUG, "Config_apply_ARGV: entries is NULL, skipping ARGV parsing" );
+       return;
+     }
 
     Info ( __func__, FACILITY_CONFIG, NULL, LOG_NOTICE, "Apply Command-Line Arguments" );
 
-    /* Créer contexte GOption */
-    ctx = g_option_context_new("- ABLS Configuration");
+    ctx = g_option_context_new("- ABLS Configuration");                                             /* Créer contexte GOption */
     group = g_option_context_get_main_group(ctx);
 
-    /* Ajouter les entries fournis par l'appelant */
-    g_option_group_add_entries(group, entries);
+    g_option_group_add_entries(group, entries);                                 /* Ajouter les entries fournis par l'appelant */
 
-    /* Parser */
-    if (!g_option_context_parse(ctx, argc, argv, &error)) {
-        Info ( __func__, FACILITY_CONFIG, NULL, LOG_WARNING, "ARGV parsing failed: %s", error->message );
-        g_error_free(error);
-    }
-
+    if (!g_option_context_parse(ctx, argc, argv, &error))                                                           /* Parser */
+     { Info ( __func__, FACILITY_CONFIG, NULL, LOG_WARNING, "ARGV parsing failed: %s", error->message );
+       g_error_free(error);
+     }
     g_option_context_free(ctx);
   }
 
