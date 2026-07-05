@@ -250,7 +250,6 @@
        liste = liste->next;
      }
 
-Json_to_log ( "json", "config", target );
     if (Json_has_member(target, "help"))                                                                 /* si demande d'aide */
      { gchar *help_text = g_option_context_get_help ( ctx, TRUE, NULL );
        g_print ( "%s", help_text );
