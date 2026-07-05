@@ -33,8 +33,10 @@
   { const gchar *name;
     const gchar *description;
     const gchar *arg_description;
-    gboolean     is_flag;
-    gboolean     flag;
+    ABLS_CONFIG_PARAMETER_TYPE type;
+    gboolean     valeur_flag;
+    gchar       *valeur_string;
+    gint         valeur_int;
   };
 
  static GSList *Config_parameters = NULL;
@@ -49,48 +51,6 @@
     Config_parameters = NULL;
   }
 /******************************************************************************************************************************/
-/* Config_argv_callback: Callback public pour injection d'options dans JSON via GOption                                      */
-/* Entrée: option_name, value, data (JsonNode *), error                                                                      */
-/* Sortie: TRUE si succes, FALSE + GError si erreur                                                                          */
-/* Usage: A passer comme arg_data dans GOptionEntry avec G_OPTION_ARG_CALLBACK, puis via user_data du GOptionGroup          */
-/******************************************************************************************************************************/
- static gboolean Config_argv_callback( const gchar *option_name, const gchar *value, gpointer data, GError **error )
-  { JsonNode *target = data;
-    const gchar *key;
-
-    if (!target)
-     { g_set_error(error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED, "Invalid config target");
-       return FALSE;
-     }
-
-    key = option_name;                                                            /* Extraire le nom de la clé (sans - ou --) */
-    if (key[0] == '-') key++;
-    if (key[0] == '-') key++;
-
-    /* Ce callback injecte la valeur directement dans le JSON
-     * L'application choisit le nom explicite de la clé dans son GOptionEntry.long_name */
-    if (value)
-     { if (!strcasecmp(value, "true"))                          /* Tentative de conversion en entier ou booléen, sinon string */
-        { Json_add_bool(target, (gchar *)key, TRUE); }
-       else if (!strcasecmp(value, "false"))
-        { Json_add_bool(target, (gchar *)key, FALSE);}
-       else
-        { gchar *endptr = NULL;
-          g_ascii_strtoll(value, &endptr, 10);
-          if (endptr && *endptr == '\0' && endptr != value)
-           { Json_add_int(target, (gchar *)key, atoi(value)); }
-          else
-           { Json_add_string(target, (gchar *)key, value); }
-        }
-       Info ( __func__, FACILITY_CONFIG, NULL, LOG_INFO, "Apply ARGV '--%s' = '%s'", key, value );
-     }
-    else
-     { Json_add_bool(target, (gchar *)key, TRUE);                               /* Option sans argument (flag) → booléen TRUE */
-       Info ( __func__, FACILITY_CONFIG, NULL, LOG_INFO, "Apply ARGV '--%s' (flag)", key );
-     }
-    return TRUE;
-  }
-/******************************************************************************************************************************/
 /* Config_build_entries: Construit et retourne un tableau temporaire de GOptionEntry depuis le registre statique              */
 /* Entrée: néant                                                                                                              */
 /* Sortie: pointeur vers le tableau alloue, ou NULL en cas d'erreur d'allocation                                             */
@@ -102,7 +62,7 @@
     entries = g_new0 ( GOptionEntry, g_slist_length ( Config_parameters ) + 1 );
     if (!entries)
      { Info ( __func__, FACILITY_CONFIG, NULL, LOG_ERR, "Memory error trying to allocate GOptionEntry array" );
-       return NULL;
+       return(NULL);
      }
 
     guint index = 0;
@@ -112,22 +72,34 @@
        entries[index].long_name = parameter->name;
        entries[index].short_name = 0;
        entries[index].flags = 0;
-       entries[index].arg = (parameter->is_flag ? G_OPTION_ARG_NONE : G_OPTION_ARG_CALLBACK);
-       entries[index].arg_data = (parameter->is_flag ? (gpointer)&parameter->flag : Config_argv_callback);
+       switch ( parameter->type )
+        { case CONFIG_BOOL   :
+          case CONFIG_FLAG   : entries[index].arg = G_OPTION_ARG_NONE;
+                               entries[index].arg_data = (gpointer)&parameter->valeur_flag;
+                               break;
+          case CONFIG_STRING : entries[index].arg = G_OPTION_ARG_STRING;
+                               entries[index].arg_data = (gpointer)&parameter->valeur_string;
+                               break;
+          case CONFIG_INT    : entries[index].arg = G_OPTION_ARG_INT;
+                               entries[index].arg_data = (gpointer)&parameter->valeur_int;
+                               break;
+          default            : Info ( __func__, FACILITY_CONFIG, NULL, LOG_ERR,
+                                     "Unknown parameter type for '%s', skipping", parameter->name );
+                               break;}
        entries[index].description = parameter->description;
        entries[index].arg_description = parameter->arg_description;
        liste = liste->next;
        index++;
      }
-    return entries;
+    return(entries);
   }
 /******************************************************************************************************************************/
 /* Config_add_parameter: Enregistre une option CLI pour le prochain parsing ARGV                                              */
 /* Entrée: name (nom long de l'option), arg_description (description de l'argument), description (texte d'aide associee),     */
-/*         is_flag (indique si l'option est un drapeau)                                                                       */
+/*         type (type attendu de la valeur, ou flag sans valeur)                                                              */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Config_add_parameter ( const gchar *name, const gchar *arg_description, const gchar *description, gboolean is_flag )
+ void Config_add_parameter ( const gchar *name, const gchar *arg_description, const gchar *description, ABLS_CONFIG_PARAMETER_TYPE type )
   { if (!name)
      { Info ( __func__, FACILITY_CONFIG, NULL, LOG_WARNING, "Invalid empty parameter name, skipping registration" );
        return;
@@ -142,7 +114,7 @@
     parameter->name            = name;                                                                 /* Ajout dans la liste */
     parameter->arg_description = arg_description;
     parameter->description     = description;
-    parameter->is_flag         = is_flag;
+    parameter->type            = type;
     Config_parameters = g_slist_append ( Config_parameters, parameter );
   }
 /******************************************************************************************************************************/
@@ -212,8 +184,9 @@
   { GOptionEntry *entries = NULL;
     GOptionContext *ctx = NULL;
     GError *error = NULL;
+    gboolean is_help_requested = FALSE;
 
-    Config_add_parameter ( "help", NULL, "Display this help", TRUE );                 /* Ajout d'une option d'aide par défaut */
+    Config_add_parameter ( "help", NULL, "Display this help", CONFIG_FLAG );          /* Ajout d'une option d'aide par défaut */
     entries = Config_build_entries ( );
     if (!entries)
      { Info ( __func__, FACILITY_CONFIG, NULL, LOG_WARNING, "Invalid entries, skipping" );
@@ -243,14 +216,38 @@
        goto end;
      }
 
-    GSList *liste = Config_parameters;                                                        /* Ajout des flags dans le json */
+    GSList *liste = Config_parameters;                                                   /* Ajout des parametres dans le json */
     while( liste )
      { struct ABLS_CONFIG_PARAMETER *parameter = liste->data;
-       if (parameter->is_flag && parameter->flag) { Json_add_bool(target, (gchar *)parameter->name, TRUE); }
+       gchar *name = g_strdup ( parameter->name );
+       if (!name)
+        { Info ( __func__, FACILITY_CONFIG, NULL, LOG_ERR, "Unable to convert parameter name '%s' to JSON name, skipping", parameter->name ); }
+       else
+        { g_strdelimit ( name, "-", '_' );                                        /* Convertir le nom de l'option en nom JSON */
+          switch (parameter->type)
+           { case CONFIG_FLAG :
+             case CONFIG_BOOL :
+              { if (parameter->valeur_flag) { Json_add_bool(target, name, TRUE); }
+                break;
+              }
+             case CONFIG_STRING :
+              { if (parameter->valeur_string) { Json_add_string(target, name, parameter->valeur_string); }
+                break;
+              }
+             case CONFIG_INT :
+              { Json_add_int(target, name, parameter->valeur_int);
+                break;
+              }
+             default : Info ( __func__, FACILITY_CONFIG, NULL, LOG_ERR,
+                               "Unknown parameter type for '%s', skipping", parameter->name );
+           }
+          g_free(name);
+        }
        liste = liste->next;
      }
 
-    if (Json_has_member(target, "help"))                                                                 /* si demande d'aide */
+    is_help_requested = Json_has_member(target, "help");                                                 /* si demande d'aide */
+    if (is_help_requested)
      { gchar *help_text = g_option_context_get_help ( ctx, TRUE, NULL );
        g_print ( "%s", help_text );
        g_free(help_text);
@@ -262,6 +259,6 @@ end:
     if (entries) g_free ( entries );
     Config_clear_parameters ( );
 
-    if (Json_has_member(target, "help")) exit(0);                                  /* si "--help", afficher l'aide et quitter */
+    if (is_help_requested) exit(0);                                  /* si "--help", afficher l'aide et quitter */
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
