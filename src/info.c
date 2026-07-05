@@ -99,10 +99,10 @@
 /*   - Si le facility figure dans Debug_facilities -> le message est toujours emis                                            */
 /*   - Sinon -> la priority est comparee au Log_level avant envoi a syslog                                                    */
 /******************************************************************************************************************************/
-void Info ( const gchar *function, const gchar *facility, const gchar *prefixe, guint priority,
-        const gchar *format, ... )
- { gchar resultat[512], chaine[128], nom_thread[32];
-  va_list ap;
+ void Info ( const gchar *function, const gchar *facility, const gchar *prefixe, guint priority,
+            const gchar *format, ... )
+  { gchar resultat[512], chaine[128];
+    va_list ap;
     gboolean forced;
 
     if (facility)
@@ -113,8 +113,7 @@ void Info ( const gchar *function, const gchar *facility, const gchar *prefixe, 
 
     if (!forced && priority > Log_level) return;
 
-    prctl ( PR_GET_NAME, &nom_thread, 0, 0, 0 );
-    g_snprintf ( resultat, sizeof(resultat), "{ \"thread\": \"%s\", ", nom_thread );
+    g_snprintf ( resultat, sizeof(resultat), "{ " );
     if (facility)
      { g_snprintf ( chaine, sizeof(chaine), "\"facility\": \"%s\", ", facility );
        g_strlcat ( resultat, chaine, sizeof(resultat) );
