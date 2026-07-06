@@ -144,7 +144,9 @@
 /* Sortie: neant                                                                                                              */
 /******************************************************************************************************************************/
  void Info_change_log_level ( guint new_log_level )
-  { Log_level = new_log_level;
+  { if (new_log_level < LOG_CRIT)  { new_log_level = LOG_CRIT; }
+    if (new_log_level > LOG_DEBUG) { new_log_level = LOG_DEBUG; }
+    Log_level = new_log_level;
     Info ( __func__, "log", NULL, LOG_NOTICE, "Log level set to %d", new_log_level );
   }
 /******************************************************************************************************************************/
