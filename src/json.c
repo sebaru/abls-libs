@@ -96,7 +96,7 @@
                     break;
                   }
                 case G_TYPE_STRING:
-                  { if (g_strrstr ( name, "password" ))
+                  { if (g_strrstr ( name, "password" ) || g_strrstr ( name, "secret" ) || g_strrstr ( name, "token" ) )
                      { Info ( __func__, log_facility, log_prefix, LOG_INFO, "%s = '******'", name ); }
                     else
                      { Info ( __func__, log_facility, log_prefix, LOG_INFO, "%s = '%s'", name, json_node_get_string(ObjectMemberNode) ); }
