@@ -31,10 +31,6 @@ project(abls-libs
   LANGUAGES C
 )
 
-add_compile_definitions(
-  ABLS_LIBS_VERSION="${ABLS_LIBS_VERSION}"
-)
-
 include(GNUInstallDirs)
 find_package(PkgConfig REQUIRED)
 
@@ -72,6 +68,10 @@ target_include_directories(abls-libs
 
 target_compile_options(abls-libs PRIVATE
   -Wall -Wno-unused-result -Wno-comment -pipe -g -ggdb
+)
+
+target_compile_definitions(abls-libs PRIVATE
+  ABLS_LIBS_VERSION="${ABLS_LIBS_VERSION}"
 )
 
 target_link_libraries(abls-libs PRIVATE
