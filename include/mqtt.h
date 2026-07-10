@@ -36,12 +36,12 @@
 
  struct ABLS_MQTT
   { struct mosquitto *MOSQ_session;
-    const gchar *log_facility;
-    const gchar *log_prefixe;
-    const gchar *client_id;
-    const gchar *hostname;
-    const gchar *username;
-    const gchar *password;
+    gchar *log_facility;
+    gchar *log_prefixe;
+    gchar *client_id;
+    gchar *hostname;
+    gchar *username;
+    gchar *password;
     gint   port;
     gboolean connected;
     gint next_top_connect;

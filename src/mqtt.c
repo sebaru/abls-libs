@@ -212,8 +212,10 @@
 
 /*-------------------------------------------------- Message with payload ----------------------------------------------------*/
     JsonNode *message = NULL;                                      /* Request peut etre nulle si mal formée ou pas de payload */
-    if (msg->payload)
-     { message = Json_get_from_string ( msg->payload );            /* Request peut etre nulle si mal formée ou pas de payload */
+    if (msg->payload && msg->payloadlen > 0)
+     { gchar *payload = g_strndup ( (const gchar *)msg->payload, msg->payloadlen );
+       message = Json_get_from_string ( payload );                 /* Request peut etre nulle si mal formée ou pas de payload */
+       g_free ( payload );
        if (!message)
         { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ERR, "MQTT with invalid payload. Dropping" ); }
      }                                                             /* Request peut etre nulle si mal formee ou pas de payload */
@@ -304,12 +306,12 @@ end:
     if (!mqtt)
      { Info( __func__, log_facility, log_prefixe, LOG_ERR, "Memory error." ); return(NULL); }
 
-    mqtt->log_facility = log_facility;
-    mqtt->log_prefixe  = log_prefixe;
-    mqtt->client_id    = client_id;
-    mqtt->hostname     = hostname;
-    mqtt->username     = username;
-    mqtt->password     = password;
+    mqtt->log_facility = g_strdup(log_facility);
+    mqtt->log_prefixe  = g_strdup(log_prefixe);
+    mqtt->client_id    = g_strdup(client_id);
+    mqtt->hostname     = g_strdup(hostname);
+    mqtt->username     = g_strdup(username);
+    mqtt->password     = g_strdup(password);
     mqtt->port         = port;
     mqtt->connected    = FALSE;
     mqtt->qos          = qos;
@@ -396,6 +398,12 @@ end:
     g_rw_lock_clear(&mqtt->subscribed_topics_lock);
     Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_NOTICE, "Disconnected %s@%s:%d (client_id=%s).",
           mqtt->username, mqtt->hostname, mqtt->port, mqtt->client_id );
+    g_free ( mqtt->log_facility );
+    g_free ( mqtt->log_prefixe );
+    g_free ( mqtt->client_id );
+    g_free ( mqtt->hostname );
+    g_free ( mqtt->username );
+    g_free ( mqtt->password );
     g_free(mqtt);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

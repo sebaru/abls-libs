@@ -291,9 +291,10 @@ JsonNode *Mqtt_get_message(struct ABLS_MQTT *mqtt);
 
 ### Comportement attendu
 
-- `Mqtt_init` prepare la session et configure les callbacks mosquitto.
+- `Mqtt_init` prepare la session et configure les callbacks mosquitto. Il duplique ses chaines de configuration (`log_facility`, `log_prefixe`, `client_id`, `hostname`, `username`, `password`) avec `g_strdup`, ce qui garantit une mémoire possédée/libérable par le module.
 - `Mqtt_start` connecte au broker puis demarre la boucle asynchrone.
 - `Mqtt_subscribe` et `Mqtt_unsubscribe` manipulent une liste de topics protegee par lock.
+- Les topics stockés dans cette liste sont dupliqués en mémoire (`g_strdup`) pour garantir une copie possédée par le module MQTT (pas une simple recopie de pointeur ou d'un buffer temporaire).
 - `Mqtt_topic_is` compare dynamiquement les `mqtt_topic_lvlX` d'un message avec une liste de niveaux attendus.
 - `Mqtt_get_message` lit la file de reception sans blocage.
 - `Mqtt_send_message` publie un payload JSON et peut conserver en file les messages en echec de publication.
