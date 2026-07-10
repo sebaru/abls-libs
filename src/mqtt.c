@@ -92,6 +92,28 @@
     return(TRUE);
   }
 /******************************************************************************************************************************/
+/* Mqtt_last_will: Configure le Last Will MQTT via un topic formate en variadique                                             */
+/* Entrées: client MQTT, payload du will (chaine C terminee par NUL), format/topic variadique                                 */
+/* Sortie : Néant                                                                                                             */
+/******************************************************************************************************************************/
+ void Mqtt_last_will ( struct ABLS_MQTT *mqtt, const gchar *will, gchar *format, ... )
+  { gchar topic_full[256];
+    va_list ap;
+    gint retour;
+
+    if (!mqtt || !mqtt->MOSQ_session || !will || !format) return;
+
+    va_start( ap, format );
+    g_vsnprintf ( topic_full, sizeof(topic_full), format, ap );
+    va_end ( ap );
+
+    retour = mosquitto_will_set ( mqtt->MOSQ_session, topic_full, strlen(will), will, mqtt->qos, FALSE );
+    if (retour != MOSQ_ERR_SUCCESS)
+     { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ERR, "MQTT last will setup error on topic '%s': %s",
+             topic_full, mosquitto_strerror ( retour ) );
+     }
+  }
+/******************************************************************************************************************************/
 /* Mqtt_subscribe: Abonne le client MQTT à un topic spécifique                                                                */
 /* Entrées: le client MQTT, le topic à abonner                                                                                */
 /* Sortie : Néant                                                                                                             */
