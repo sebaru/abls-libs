@@ -48,7 +48,6 @@
     gchar *facility = Json_get_string ( element, "log_facility" );
     if (facility) Info_debug_facility ( prefixe_valeur, facility );
   }
-
 /******************************************************************************************************************************/
 /* Info_set_facilities: Force le debug des facilities listees dans un tableau JSON                                            */
 /* Entree: prefixe_valeur - prefixe de log a transmettre a Info_debug_facility                                                */
@@ -69,11 +68,11 @@
  void Info_debug_facility ( const gchar *prefixe_valeur, const gchar *facility )
   { if (!facility) return;
     g_rw_lock_writer_lock ( &Debug_facilities_lock );
-    if (! g_slist_find_custom ( Debug_facilities, facility, (GCompareFunc)g_ascii_strcasecmp ) )
-     { Debug_facilities = g_slist_prepend ( Debug_facilities, g_strdup(facility) );
-       Info ( __func__, "log", prefixe_valeur, LOG_NOTICE, "Debug facility '%s' is forced", facility );
-     }
+    GSList *found = g_slist_find_custom ( Debug_facilities, facility, (GCompareFunc)g_ascii_strcasecmp );
+    if (!found) { Debug_facilities = g_slist_prepend ( Debug_facilities, g_strdup(facility) ); }
     g_rw_lock_writer_unlock ( &Debug_facilities_lock );
+                                            /* Après g_rw_lock_writer car Info utilise le g_rw_lock_reader, et pas re-entrant */
+    if (!found) Info ( __func__, "log", prefixe_valeur, LOG_NOTICE, "Debug facility '%s' is forced", facility );
   }
 /******************************************************************************************************************************/
 /* Info_undebug_facility: Desactive le forcage de debug pour une facility donnée                                              */
@@ -88,9 +87,10 @@
     if (found)
      { g_free ( found->data );
        Debug_facilities = g_slist_delete_link ( Debug_facilities, found );
-       Info ( __func__, "log", prefixe_valeur, LOG_NOTICE, "Debug facility '%s' is no longer forced", facility );
      }
     g_rw_lock_writer_unlock ( &Debug_facilities_lock );
+                                            /* Après g_rw_lock_writer car Info utilise le g_rw_lock_reader, et pas re-entrant */
+    if(found) Info ( __func__, "log", prefixe_valeur, LOG_NOTICE, "Debug facility '%s' is no longer forced", facility );
   }
 /******************************************************************************************************************************/
 /* Info_clear_debug_facilities: Vide la liste de tous les facilities de debug forces                                          */
@@ -181,8 +181,8 @@
 /* Sortie: neant                                                                                                              */
 /******************************************************************************************************************************/
  static void Info_stop ( int code_retour, void *data )
-  { Info ( __func__, "log", NULL, LOG_NOTICE, "End of logs" );
-    Info_clear_debug_facilities ();
+  { Info_clear_debug_facilities ();
+    Info ( __func__, "log", NULL, LOG_NOTICE, "End of logs" );
     g_rw_lock_clear ( &Debug_facilities_lock );
     closelog();
   }
