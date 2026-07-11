@@ -66,20 +66,42 @@
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void Json_to_log ( gchar *log_facility, gchar *log_prefix, JsonNode *RootNode )
-  { const char *name;
+  { gchar *name;
     JsonObjectIter iter;
     JsonNode *ObjectMemberNode;
-    if (!log_prefix) log_prefix="";
     if (!log_facility) log_facility="json";
     JsonObject *RootObject = json_node_get_object(RootNode);                                /* Récupération de l'objet source */
     json_object_iter_init(&iter, RootObject);
-    while (json_object_iter_next(&iter, &name, &ObjectMemberNode))                        /* Pour tous les membres de l'objet */
+    while (json_object_iter_next(&iter, (const gchar **)&name, &ObjectMemberNode))                        /* Pour tous les membres de l'objet */
      { JsonNodeType value_json_type = json_node_get_node_type ( ObjectMemberNode );
        switch (value_json_type)                                                                     /* Selon le type de noeud */
         { default:
-          case JSON_NODE_NULL:   break;
-          case JSON_NODE_OBJECT: break;
-          case JSON_NODE_ARRAY:  break;
+          case JSON_NODE_NULL:
+             Info ( __func__, log_facility, log_prefix, LOG_INFO, "%s = 'null'", name );
+             break;
+          case JSON_NODE_OBJECT:
+           { gchar prefix[64];
+             g_snprintf ( prefix, sizeof(prefix), "%s.%s", log_prefix, name );
+             JsonNode *child_node = Json_get_object_as_node ( RootNode, name );
+             Info ( __func__, log_facility, prefix, LOG_INFO, "%s = '{object}'", name );
+             Json_to_log ( log_facility, prefix, child_node );
+             break;
+           }
+          case JSON_NODE_ARRAY:
+           { JsonArray *array = json_node_get_array(ObjectMemberNode);
+             Info ( __func__, log_facility, log_prefix, LOG_INFO, "%s = '[array]'", name );
+             if (array)
+              { guint index, array_length;
+                array_length = json_array_get_length(array);
+                gchar prefix[64];
+                for (index=0; index<array_length; index++)
+                 { g_snprintf ( prefix, sizeof(prefix), "%s[%s].%d", log_prefix, name, index );
+                   JsonNode *child_node = json_array_get_element(array, index);
+                   Json_to_log ( log_facility, prefix, child_node );
+                 }
+              }
+             break;
+           }
           case JSON_NODE_VALUE:
            { GType valueType = json_node_get_value_type( ObjectMemberNode );                       /* Selon le type de valeur */
              switch (valueType)
@@ -96,7 +118,7 @@
                     break;
                   }
                 case G_TYPE_STRING:
-                  { if (g_strrstr ( name, "password" ))
+                  { if (g_strrstr ( name, "password" ) || g_strrstr ( name, "secret" ) || g_strrstr ( name, "token" ) )
                      { Info ( __func__, log_facility, log_prefix, LOG_INFO, "%s = '******'", name ); }
                     else
                      { Info ( __func__, log_facility, log_prefix, LOG_INFO, "%s = '%s'", name, json_node_get_string(ObjectMemberNode) ); }
@@ -105,6 +127,7 @@
                 default:
                   { Info ( __func__, log_facility, log_prefix, LOG_INFO, "%s = 'unknown value type'", name ); }
               }
+             break;
            }
         }
      }

@@ -33,17 +33,19 @@
 
  #define FACILITY_CONFIG "config"
 
+ typedef enum
+  { CONFIG_FLAG,
+    CONFIG_BOOL,
+    CONFIG_STRING,
+    CONFIG_INT,
+  } ABLS_CONFIG_PARAMETER_TYPE;
+
 /*-- Configuration parsers ---------------------------------------------------------------------------------------------------------------*/
 
-/* Contexte pour callback GOption → JSON */
-typedef struct {
-    JsonNode *json;
-} ConfigArgvCtx;
-
- extern gboolean Config_argv_callback( const gchar *option_name, const gchar *value, gpointer data, GError **error);
+ extern void Config_add_parameter ( const gchar *name, const gchar *arg_description, const gchar *description, ABLS_CONFIG_PARAMETER_TYPE type );
  extern void Config_apply_FILE  ( JsonNode *target, const gchar *filename );
  extern void Config_apply_ENV   ( JsonNode *target );
- extern void Config_apply_ARGV  ( JsonNode *target, int *argc, char ***argv, GOptionEntry *entries );
+ extern void Config_apply_ARGV  ( JsonNode *target, gint argc, gchar **argv );
 
 #endif /* _ABLS_CONFIG_H_ */
 /*----------------------------------------------------------------------------------------------------------------------------*/

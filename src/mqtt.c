@@ -92,6 +92,28 @@
     return(TRUE);
   }
 /******************************************************************************************************************************/
+/* Mqtt_last_will: Configure le Last Will MQTT via un topic formate en variadique                                             */
+/* Entrées: client MQTT, payload du will (chaine C terminee par NUL), format/topic variadique                                 */
+/* Sortie : Néant                                                                                                             */
+/******************************************************************************************************************************/
+ void Mqtt_last_will ( struct ABLS_MQTT *mqtt, const gchar *will, gchar *format, ... )
+  { gchar topic_full[256];
+    va_list ap;
+    gint retour;
+
+    if (!mqtt || !mqtt->MOSQ_session || !will || !format) return;
+
+    va_start( ap, format );
+    g_vsnprintf ( topic_full, sizeof(topic_full), format, ap );
+    va_end ( ap );
+
+    retour = mosquitto_will_set ( mqtt->MOSQ_session, topic_full, strlen(will), will, mqtt->qos, FALSE );
+    if (retour != MOSQ_ERR_SUCCESS)
+     { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ERR, "MQTT last will setup error on topic '%s': %s",
+             topic_full, mosquitto_strerror ( retour ) );
+     }
+  }
+/******************************************************************************************************************************/
 /* Mqtt_subscribe: Abonne le client MQTT à un topic spécifique                                                                */
 /* Entrées: le client MQTT, le topic à abonner                                                                                */
 /* Sortie : Néant                                                                                                             */
@@ -152,10 +174,10 @@
 /******************************************************************************************************************************/
  static void Mqtt_on_connect_CB( struct mosquitto *mosq, void *obj, int return_code )
   { struct ABLS_MQTT *mqtt = (struct ABLS_MQTT *)obj;
-    Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_NOTICE, "Connected with return code %d: %s",
-          return_code, mosquitto_connack_string( return_code ) );
     if (return_code == 0)
-     { mqtt->connected = TRUE;
+     { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_NOTICE, "Connected %s@%s:%d (client_id=%s) -> return code %d: %s",
+             mqtt->username, mqtt->hostname, mqtt->port, mqtt->client_id, return_code, mosquitto_connack_string( return_code ) );
+       mqtt->connected = TRUE;
        g_rw_lock_reader_lock(&mqtt->subscribed_topics_lock);
        GSList *liste = mqtt->subscribed_topics;
        while (liste)                                                                    /* souscrit aux topics a la connexion */
@@ -179,6 +201,11 @@
           Json_unref(node);
         }
      }
+    else
+     { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ERR, "Connection failed %s@%s:%d (client_id=%s) -> return code %d: %s",
+             mqtt->username, mqtt->hostname, mqtt->port, mqtt->client_id, return_code, mosquitto_connack_string( return_code ) );
+     }
+
   }
 /******************************************************************************************************************************/
 /* Mqtt_on_disconnect_CB: appelé par la librairie quand le broker est déconnecté                                              */
@@ -187,8 +214,8 @@
 /******************************************************************************************************************************/
  static void Mqtt_on_disconnect_CB( struct mosquitto *mosq, void *obj, int return_code )
   { struct ABLS_MQTT *mqtt = (struct ABLS_MQTT *)obj;
-    Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_NOTICE, "Disconnected with return code %d: %s",
-          return_code, mosquitto_connack_string( return_code ) );
+    Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_NOTICE, "Disconnected %s@%s:%d (client_id=%s) -> return code %d: %s",
+      mqtt->username, mqtt->hostname, mqtt->port, mqtt->client_id, return_code, mosquitto_connack_string( return_code ) );
     mqtt->connected = FALSE;
   }
 /******************************************************************************************************************************/
@@ -207,8 +234,10 @@
 
 /*-------------------------------------------------- Message with payload ----------------------------------------------------*/
     JsonNode *message = NULL;                                      /* Request peut etre nulle si mal formée ou pas de payload */
-    if (msg->payload)
-     { message = Json_get_from_string ( msg->payload );            /* Request peut etre nulle si mal formée ou pas de payload */
+    if (msg->payload && msg->payloadlen > 0)
+     { gchar *payload = g_strndup ( (const gchar *)msg->payload, msg->payloadlen );
+       message = Json_get_from_string ( payload );                 /* Request peut etre nulle si mal formée ou pas de payload */
+       g_free ( payload );
        if (!message)
         { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ERR, "MQTT with invalid payload. Dropping" ); }
      }                                                             /* Request peut etre nulle si mal formee ou pas de payload */
@@ -299,12 +328,12 @@ end:
     if (!mqtt)
      { Info( __func__, log_facility, log_prefixe, LOG_ERR, "Memory error." ); return(NULL); }
 
-    mqtt->log_facility = log_facility;
-    mqtt->log_prefixe  = log_prefixe;
-    mqtt->client_id    = client_id;
-    mqtt->hostname     = hostname;
-    mqtt->username     = username;
-    mqtt->password     = password;
+    mqtt->log_facility = g_strdup(log_facility);
+    mqtt->log_prefixe  = g_strdup(log_prefixe);
+    mqtt->client_id    = g_strdup(client_id);
+    mqtt->hostname     = g_strdup(hostname);
+    mqtt->username     = g_strdup(username);
+    mqtt->password     = g_strdup(password);
     mqtt->port         = port;
     mqtt->connected    = FALSE;
     mqtt->qos          = qos;
@@ -348,10 +377,13 @@ end:
 /******************************************************************************************************************************/
  gboolean Mqtt_start ( struct ABLS_MQTT *mqtt )
   { if (!mqtt) return(FALSE);
+    Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_NOTICE, "Connecting as '%s' with id '%s' on '%s:%d'.",
+          mqtt->username, mqtt->client_id, mqtt->hostname, mqtt->port );
+
     gboolean retour = mosquitto_connect( mqtt->MOSQ_session, mqtt->hostname, mqtt->port, 60 );
     if ( retour != MOSQ_ERR_SUCCESS )
-     { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ERR, "MQTT_API connection to '%s' error: %s",
-             mqtt->hostname, mosquitto_strerror ( retour ) );
+     { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ERR, "Connection error %s@%s:%d (client_id=%s): %s",
+             mqtt->username, mqtt->hostname, mqtt->port, mqtt->client_id, mosquitto_strerror ( retour ) );
        return(FALSE);}
 
     retour = mosquitto_loop_start( mqtt->MOSQ_session );
@@ -359,8 +391,6 @@ end:
      { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ERR, "MQTT loop not started: %s", mosquitto_strerror ( retour ) );
        return(FALSE);
      }
-    Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_NOTICE, "Connected as %s with id %s on %s:%d.",
-               mqtt->username, mqtt->client_id, mqtt->hostname, mqtt->port );
     return(TRUE);
   }
 /******************************************************************************************************************************/
@@ -388,8 +418,14 @@ end:
     if (mqtt->queue) g_async_queue_unref(mqtt->queue);        /* Fait automatiquement json_unref sur les éléments de la queue */
     if (mqtt->subscribed_topics) g_slist_free_full(mqtt->subscribed_topics, g_free);
     g_rw_lock_clear(&mqtt->subscribed_topics_lock);
-    Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_NOTICE, "Disconnected from %s with id %s on %s:%d.",
-          mqtt->username, mqtt->client_id, mqtt->hostname, mqtt->port );
+    Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_NOTICE, "Disconnected %s@%s:%d (client_id=%s).",
+          mqtt->username, mqtt->hostname, mqtt->port, mqtt->client_id );
+    g_free ( mqtt->log_facility );
+    g_free ( mqtt->log_prefixe );
+    g_free ( mqtt->client_id );
+    g_free ( mqtt->hostname );
+    g_free ( mqtt->username );
+    g_free ( mqtt->password );
     g_free(mqtt);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

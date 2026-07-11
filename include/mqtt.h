@@ -36,12 +36,12 @@
 
  struct ABLS_MQTT
   { struct mosquitto *MOSQ_session;
-    const gchar *log_facility;
-    const gchar *log_prefixe;
-    const gchar *client_id;
-    const gchar *hostname;
-    const gchar *username;
-    const gchar *password;
+    gchar *log_facility;
+    gchar *log_prefixe;
+    gchar *client_id;
+    gchar *hostname;
+    gchar *username;
+    gchar *password;
     gint   port;
     gboolean connected;
     gint next_top_connect;
@@ -59,6 +59,7 @@
  extern gboolean Mqtt_start ( struct ABLS_MQTT *mqtt );
  extern void Mqtt_stop      ( struct ABLS_MQTT *mqtt );
  extern gboolean Mqtt_is_connected ( struct ABLS_MQTT *mqtt );
+ extern void Mqtt_last_will ( struct ABLS_MQTT *mqtt, const gchar *will, gchar *format, ... );
  extern void Mqtt_subscribe ( struct ABLS_MQTT *mqtt, gchar *format, ... );
  extern void Mqtt_unsubscribe ( struct ABLS_MQTT *mqtt, gchar *format, ... );
  /* Mqtt_topic_is: compare mqtt_topic_lvlX a une liste de niveaux; un niveau attendu NULL est ignore */

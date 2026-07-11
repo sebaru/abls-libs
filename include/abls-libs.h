@@ -28,8 +28,8 @@
 #ifndef _ABLS_LIBS_H_
  #define _ABLS_LIBS_H_
 
- #include "info.h"
  #include "json.h"
+ #include "info.h"
  #include "mqtt.h"
  #include "config.h"
 

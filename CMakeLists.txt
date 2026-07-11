@@ -31,10 +31,6 @@ project(abls-libs
   LANGUAGES C
 )
 
-add_compile_definitions(
-  ABLS_LIBS_VERSION="${ABLS_LIBS_VERSION}"
-)
-
 include(GNUInstallDirs)
 find_package(PkgConfig REQUIRED)
 
@@ -72,6 +68,10 @@ target_include_directories(abls-libs
 
 target_compile_options(abls-libs PRIVATE
   -Wall -Wno-unused-result -Wno-comment -pipe -g -ggdb
+)
+
+target_compile_definitions(abls-libs PRIVATE
+  ABLS_LIBS_VERSION="${ABLS_LIBS_VERSION}"
 )
 
 target_link_libraries(abls-libs PRIVATE
@@ -130,6 +130,9 @@ set(CPACK_RPM_RUNTIME_PACKAGE_REQUIRES "glib2, json-glib")
 set(CPACK_RPM_RUNTIME_POST_INSTALL_SCRIPT_FILE "" )
 set(CPACK_RPM_RUNTIME_POST_SCRIPTLET  "/sbin/ldconfig")
 set(CPACK_RPM_RUNTIME_FILE_NAME "RPM-DEFAULT")
+set(CPACK_RPM_RUNTIME_DEBUGINFO_PACKAGE ON)
+set(CPACK_RPM_RUNTIME_DEBUGINFO_FILE_NAME "RPM-DEFAULT")
+set(CPACK_RPM_RUNTIME_BUILD_SOURCE_DIRS_PREFIX "/usr/src/debug")
 
 # Package devel
 set(CPACK_RPM_DEVEL_PACKAGE_NAME    "abls-libs-devel")

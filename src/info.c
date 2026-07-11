@@ -35,6 +35,31 @@
  static const gchar *Prefixe_name = NULL;
 
 /******************************************************************************************************************************/
+/* Info_set_facilities_by_array: Callback Json_foreach_array_element pour forcer le debug d'une facility                      */
+/* Entree: array          - tableau JSON parcouru                                                                             */
+/*         index          - index courant dans le tableau                                                                     */
+/*         element        - noeud JSON courant                                                                                */
+/*         data           - prefixe de log (const gchar *)                                                                    */
+/* Sortie: neant                                                                                                              */
+/******************************************************************************************************************************/
+ static void Info_set_facilities_by_array ( JsonArray *array, guint index, JsonNode *element, gpointer data )
+  { const gchar *prefixe_valeur = data;
+    if (!element || !JSON_NODE_HOLDS_OBJECT ( element )) return;
+    gchar *facility = Json_get_string ( element, "log_facility" );
+    if (facility) Info_debug_facility ( prefixe_valeur, facility );
+  }
+/******************************************************************************************************************************/
+/* Info_set_facilities: Force le debug des facilities listees dans un tableau JSON                                            */
+/* Entree: prefixe_valeur - prefixe de log a transmettre a Info_debug_facility                                                */
+/*         RootNode       - noeud JSON de configuration                                                                       */
+/*         array_name     - nom du tableau contenant les facilities                                                           */
+/* Sortie: neant                                                                                                              */
+/******************************************************************************************************************************/
+ void Info_set_facilities ( const gchar *prefixe_valeur, JsonNode *RootNode, gchar *array_name )
+  { Info_clear_debug_facilities ();
+    Json_foreach_array_element ( RootNode, array_name, Info_set_facilities_by_array, (gpointer)prefixe_valeur );
+  }
+/******************************************************************************************************************************/
 /* Info_debug_facility: Active le forcage de debug pour une facility donnee                                                   */
 /* Entree: prefixe_valeur - valeur associee au prefixe de log                                                                 */
 /*         facility       - nom de la facility (ex: "smsg", "bus", "json")                                                    */
@@ -43,11 +68,11 @@
  void Info_debug_facility ( const gchar *prefixe_valeur, const gchar *facility )
   { if (!facility) return;
     g_rw_lock_writer_lock ( &Debug_facilities_lock );
-    if (! g_slist_find_custom ( Debug_facilities, facility, (GCompareFunc)g_ascii_strcasecmp ) )
-     { Debug_facilities = g_slist_prepend ( Debug_facilities, g_strdup(facility) );
-       Info ( __func__, "log", prefixe_valeur, LOG_NOTICE, "Debug facility '%s' is forced", facility );
-     }
+    GSList *found = g_slist_find_custom ( Debug_facilities, facility, (GCompareFunc)g_ascii_strcasecmp );
+    if (!found) { Debug_facilities = g_slist_prepend ( Debug_facilities, g_strdup(facility) ); }
     g_rw_lock_writer_unlock ( &Debug_facilities_lock );
+                                            /* Après g_rw_lock_writer car Info utilise le g_rw_lock_reader, et pas re-entrant */
+    if (!found) Info ( __func__, "log", prefixe_valeur, LOG_NOTICE, "Debug facility '%s' is forced", facility );
   }
 /******************************************************************************************************************************/
 /* Info_undebug_facility: Desactive le forcage de debug pour une facility donnée                                              */
@@ -62,9 +87,10 @@
     if (found)
      { g_free ( found->data );
        Debug_facilities = g_slist_delete_link ( Debug_facilities, found );
-       Info ( __func__, "log", prefixe_valeur, LOG_NOTICE, "Debug facility '%s' is no longer forced", facility );
      }
     g_rw_lock_writer_unlock ( &Debug_facilities_lock );
+                                            /* Après g_rw_lock_writer car Info utilise le g_rw_lock_reader, et pas re-entrant */
+    if(found) Info ( __func__, "log", prefixe_valeur, LOG_NOTICE, "Debug facility '%s' is no longer forced", facility );
   }
 /******************************************************************************************************************************/
 /* Info_clear_debug_facilities: Vide la liste de tous les facilities de debug forces                                          */
@@ -99,10 +125,10 @@
 /*   - Si le facility figure dans Debug_facilities -> le message est toujours emis                                            */
 /*   - Sinon -> la priority est comparee au Log_level avant envoi a syslog                                                    */
 /******************************************************************************************************************************/
-void Info ( const gchar *function, const gchar *facility, const gchar *prefixe, guint priority,
-        const gchar *format, ... )
- { gchar resultat[512], chaine[128], nom_thread[32];
-  va_list ap;
+ void Info ( const gchar *function, const gchar *facility, const gchar *prefixe, guint priority,
+            const gchar *format, ... )
+  { gchar resultat[512], chaine[128];
+    va_list ap;
     gboolean forced;
 
     if (facility)
@@ -113,8 +139,7 @@ void Info ( const gchar *function, const gchar *facility, const gchar *prefixe, 
 
     if (!forced && priority > Log_level) return;
 
-    prctl ( PR_GET_NAME, &nom_thread, 0, 0, 0 );
-    g_snprintf ( resultat, sizeof(resultat), "{ \"thread\": \"%s\", ", nom_thread );
+    g_snprintf ( resultat, sizeof(resultat), "{ " );
     if (facility)
      { g_snprintf ( chaine, sizeof(chaine), "\"facility\": \"%s\", ", facility );
        g_strlcat ( resultat, chaine, sizeof(resultat) );
@@ -145,7 +170,9 @@ void Info ( const gchar *function, const gchar *facility, const gchar *prefixe, 
 /* Sortie: neant                                                                                                              */
 /******************************************************************************************************************************/
  void Info_change_log_level ( guint new_log_level )
-  { Log_level = new_log_level;
+  { if (new_log_level < LOG_CRIT)  { new_log_level = LOG_CRIT; }
+    if (new_log_level > LOG_DEBUG) { new_log_level = LOG_DEBUG; }
+    Log_level = new_log_level;
     Info ( __func__, "log", NULL, LOG_NOTICE, "Log level set to %d", new_log_level );
   }
 /******************************************************************************************************************************/
@@ -154,8 +181,8 @@ void Info ( const gchar *function, const gchar *facility, const gchar *prefixe, 
 /* Sortie: neant                                                                                                              */
 /******************************************************************************************************************************/
  static void Info_stop ( int code_retour, void *data )
-  { Info ( __func__, "log", NULL, LOG_NOTICE, "End of logs" );
-    Info_clear_debug_facilities ();
+  { Info_clear_debug_facilities ();
+    Info ( __func__, "log", NULL, LOG_NOTICE, "End of logs" );
     g_rw_lock_clear ( &Debug_facilities_lock );
     closelog();
   }
