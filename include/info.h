@@ -49,7 +49,7 @@
  extern gint Info_reset_nbr_log ( void );
 
 /*-- Forcage debug par contexte ----------------------------------------------------------------------------------------------*/
- extern void Info_set_facilities_by_array  ( JsonArray *array, guint index, JsonNode *element, gpointer data );
+ extern void Info_set_facilities        ( const gchar *prefixe_valeur, JsonNode *RootNode, gchar *array_name );
  extern void Info_debug_facility        ( const gchar *prefixe, const gchar *context );
  extern void Info_undebug_facility      ( const gchar *prefixe, const gchar *context );
  extern void Info_clear_debug_facilities ( void );

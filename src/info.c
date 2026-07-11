@@ -38,15 +38,27 @@
 /* Info_set_facilities_by_array: Callback Json_foreach_array_element pour forcer le debug d'une facility                      */
 /* Entree: array          - tableau JSON parcouru                                                                             */
 /*         index          - index courant dans le tableau                                                                     */
-/*         element        - noeud JSON courant                                                                                 */
+/*         element        - noeud JSON courant                                                                                */
 /*         data           - prefixe de log (const gchar *)                                                                    */
 /* Sortie: neant                                                                                                              */
 /******************************************************************************************************************************/
- void Info_set_facilities_by_array ( JsonArray *array, guint index, JsonNode *element, gpointer data )
+ static void Info_set_facilities_by_array ( JsonArray *array, guint index, JsonNode *element, gpointer data )
   { const gchar *prefixe_valeur = data;
     if (!element || !JSON_NODE_HOLDS_OBJECT ( element )) return;
     gchar *facility = Json_get_string ( element, "log_facility" );
     if (facility) Info_debug_facility ( prefixe_valeur, facility );
+  }
+
+/******************************************************************************************************************************/
+/* Info_set_facilities: Force le debug des facilities listees dans un tableau JSON                                            */
+/* Entree: prefixe_valeur - prefixe de log a transmettre a Info_debug_facility                                                */
+/*         RootNode       - noeud JSON de configuration                                                                       */
+/*         array_name     - nom du tableau contenant les facilities                                                           */
+/* Sortie: neant                                                                                                              */
+/******************************************************************************************************************************/
+ void Info_set_facilities ( const gchar *prefixe_valeur, JsonNode *RootNode, gchar *array_name )
+  { Info_clear_debug_facilities ();
+    Json_foreach_array_element ( RootNode, array_name, Info_set_facilities_by_array, (gpointer)prefixe_valeur );
   }
 /******************************************************************************************************************************/
 /* Info_debug_facility: Active le forcage de debug pour une facility donnee                                                   */
