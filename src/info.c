@@ -35,6 +35,20 @@
  static const gchar *Prefixe_name = NULL;
 
 /******************************************************************************************************************************/
+/* Info_set_facilities_by_array: Callback Json_foreach_array_element pour forcer le debug d'une facility                      */
+/* Entree: array          - tableau JSON parcouru                                                                             */
+/*         index          - index courant dans le tableau                                                                     */
+/*         element        - noeud JSON courant                                                                                 */
+/*         data           - prefixe de log (const gchar *)                                                                    */
+/* Sortie: neant                                                                                                              */
+/******************************************************************************************************************************/
+ void Info_set_facilities_by_array ( JsonArray *array, guint index, JsonNode *element, gpointer data )
+  { const gchar *prefixe_valeur = data;
+    if (!element || !JSON_NODE_HOLDS_OBJECT ( element )) return;
+    gchar *facility = Json_get_string ( element, "log_facility" );
+    if (facility) Info_debug_facility ( prefixe_valeur, facility );
+  }
+/******************************************************************************************************************************/
 /* Info_debug_facility: Active le forcage de debug pour une facility donnee                                                   */
 /* Entree: prefixe_valeur - valeur associee au prefixe de log                                                                 */
 /*         facility       - nom de la facility (ex: "smsg", "bus", "json")                                                    */
