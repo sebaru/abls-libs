@@ -61,7 +61,7 @@
 
     entries = g_new0 ( GOptionEntry, g_slist_length ( Config_parameters ) + 1 );
     if (!entries)
-     { Info ( __func__, FACILITY_CONFIG, NULL, LOG_ERR, "Memory error trying to allocate GOptionEntry array" );
+     { Info ( __func__, FACILITY_CONFIG, NULL, LOG_ALERT, "Memory error trying to allocate GOptionEntry array" );
        return(NULL);
      }
 
@@ -107,7 +107,7 @@
 
     struct ABLS_CONFIG_PARAMETER *parameter = g_try_malloc0 ( sizeof ( struct ABLS_CONFIG_PARAMETER ) );
     if (!parameter)
-     { Info ( __func__, FACILITY_CONFIG, NULL, LOG_ERR, "Memory error trying to allocate parameter structure" );
+     { Info ( __func__, FACILITY_CONFIG, NULL, LOG_ALERT, "Memory error trying to allocate parameter structure" );
        return;
      }
 

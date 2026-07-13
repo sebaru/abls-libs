@@ -244,7 +244,7 @@
     else
      { message = Json_create();                                                        /* Crée un node vide si pas de payload */
        if (!message)
-        { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ERR, "Memory error creating message. Dropping" ); }
+        { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ALERT, "Memory error creating message. Dropping" ); }
      }
 
     if (message)                                                            /* Si on a bien un payload ou un tampon tout neuf */
@@ -326,7 +326,7 @@ end:
 
     struct ABLS_MQTT *mqtt = g_try_malloc0 ( sizeof ( struct ABLS_MQTT ) );
     if (!mqtt)
-     { Info( __func__, log_facility, log_prefixe, LOG_ERR, "Memory error." ); return(NULL); }
+      { Info( __func__, log_facility, log_prefixe, LOG_ALERT, "Memory error." ); return(NULL); }
 
     mqtt->log_facility = g_strdup(log_facility);
     mqtt->log_prefixe  = g_strdup(log_prefixe);
