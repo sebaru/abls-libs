@@ -239,7 +239,11 @@
        message = Json_get_from_string ( payload );                 /* Request peut etre nulle si mal formée ou pas de payload */
        g_free ( payload );
        if (!message)
-        { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ERR, "MQTT with invalid payload. Dropping" ); }
+        { message = Json_create();                                            /* Crée un node vide si pas de payload not json */
+          if (!message)
+           { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ALERT, "Memory error creating message. Dropping" ); }
+          else { Json_add_string ( message, "payload", payload ); }     /* Ajoute le payload brut pour traitement plus simple */
+        }
      }                                                             /* Request peut etre nulle si mal formee ou pas de payload */
     else
      { message = Json_create();                                                        /* Crée un node vide si pas de payload */
