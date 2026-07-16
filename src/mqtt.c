@@ -239,7 +239,11 @@
        message = Json_get_from_string ( payload );                 /* Request peut etre nulle si mal formée ou pas de payload */
        g_free ( payload );
        if (!message)
-        { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ERR, "MQTT with invalid payload. Dropping" ); }
+        { message = Json_create();                                            /* Crée un node vide si pas de payload not json */
+          if (!message)
+           { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ALERT, "Memory error creating message. Dropping" ); }
+          else { Json_add_string ( message, "payload", payload ); }     /* Ajoute le payload brut pour traitement plus simple */
+        }
      }                                                             /* Request peut etre nulle si mal formee ou pas de payload */
     else
      { message = Json_create();                                                        /* Crée un node vide si pas de payload */
@@ -380,13 +384,13 @@ end:
     Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_NOTICE, "Connecting as '%s' with id '%s' on '%s:%d'.",
           mqtt->username, mqtt->client_id, mqtt->hostname, mqtt->port );
 
-    gboolean retour = mosquitto_connect( mqtt->MOSQ_session, mqtt->hostname, mqtt->port, 60 );
+    gboolean retour = mosquitto_connect_async( mqtt->MOSQ_session, mqtt->hostname, mqtt->port, 60 );
     if ( retour != MOSQ_ERR_SUCCESS )
      { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ERR, "Connection error %s@%s:%d (client_id=%s): %s",
              mqtt->username, mqtt->hostname, mqtt->port, mqtt->client_id, mosquitto_strerror ( retour ) );
-       return(FALSE);}
+     } /* On poursuit quand même */
 
-    retour = mosquitto_loop_start( mqtt->MOSQ_session );
+    retour = mosquitto_loop_start( mqtt->MOSQ_session );                       /* meme si connect en erreur, on lance la loop */
     if ( retour != MOSQ_ERR_SUCCESS )
      { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ERR, "MQTT loop not started: %s", mosquitto_strerror ( retour ) );
        return(FALSE);
@@ -394,9 +398,9 @@ end:
     return(TRUE);
   }
 /******************************************************************************************************************************/
-/* Mqtt_is_connected: Retourne l'etat de connexion MQTT                                                                     */
-/* Entrée: client MQTT                                                                                                       */
-/* Sortie: TRUE si connecté, FALSE sinon                                                                                     */
+/* Mqtt_is_connected: Retourne l'etat de connexion MQTT                                                                       */
+/* Entrée: client MQTT                                                                                                        */
+/* Sortie: TRUE si connecté, FALSE sinon                                                                                      */
 /******************************************************************************************************************************/
  gboolean Mqtt_is_connected ( struct ABLS_MQTT *mqtt )
   { if (!mqtt) return(FALSE);
