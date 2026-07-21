@@ -58,17 +58,17 @@
 /******************************************************************************************************************************/
  gboolean Heure_at_min ( HEURE_AT *ctx, gint heure, gint minute )
   { struct tm tm_now;
-    time_t now, debut_minute;
+    time_t now, minute_start;
 
     if (!ctx) return (FALSE);
     now = time (NULL);
     localtime_r ( &now, &tm_now );
 
     if (tm_now.tm_hour != heure || tm_now.tm_min != minute) return (FALSE);
-    debut_minute = now - tm_now.tm_sec;
-    if (ctx->last_triggered == debut_minute) return (FALSE);
+    minute_start = now - tm_now.tm_sec;
+    if (ctx->last_triggered == minute_start) return (FALSE);
 
-    ctx->last_triggered = debut_minute;
+    ctx->last_triggered = minute_start;
     return (TRUE);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
