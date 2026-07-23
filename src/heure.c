@@ -35,7 +35,7 @@
 /*         seconde - seconde souhaitée (0-59)                                                                                 */
 /* Sortie: TRUE lors du premier appel correspondant à la seconde visée ; FALSE le reste du temps                              */
 /******************************************************************************************************************************/
- gboolean Heure_at_sec ( HEURE_AT *ctx, gint heure, gint minute, gint seconde )
+ gboolean Heure_at_sec ( ABLS_HEURE *ctx, gint heure, gint minute, gint seconde )
   { struct tm tm_now;
     time_t now;
 
@@ -56,7 +56,7 @@
 /*         minute - minute souhaitée (0-59)                                                                                   */
 /* Sortie: TRUE lors du premier appel correspondant à la minute visée ; FALSE le reste du temps                               */
 /******************************************************************************************************************************/
- gboolean Heure_at_min ( HEURE_AT *ctx, gint heure, gint minute )
+ gboolean Heure_at_min ( ABLS_HEURE *ctx, gint heure, gint minute )
   { struct tm tm_now;
     time_t now, minute_start;
 

@@ -31,17 +31,17 @@
  #include <glib.h>
  #include <time.h>
 
-/*-- Structure d'état pour Heure_at_sec et Heure_at_min -----------------------------------------------------------------------*/
-/*   A déclarer par l'appelant et initialisée à zéro (ex : HEURE_AT ctx = {};)                                               */
+/*-- Structure d'état pour Heure_at_sec et Heure_at_min ----------------------------------------------------------------------*/
+/*   A déclarer par l'appelant et initialisée à zéro (ex : ABLS_HEURE ctx = {};)                                              */
  typedef struct
-  { time_t last_triggered;     /* horodatage (secondes depuis epoch) du dernier déclenchement */
-  } HEURE_AT;
+  { time_t last_triggered;                                     /* horodatage (secondes depuis epoch) du dernier déclenchement */
+  } ABLS_HEURE;
 
-/*-- Déclenchement ponctuel à une seconde précise -----------------------------------------------------------------------------*/
- extern gboolean Heure_at_sec ( HEURE_AT *ctx, gint heure, gint minute, gint seconde );
+/*-- Déclenchement ponctuel à une seconde précise ----------------------------------------------------------------------------*/
+ extern gboolean Heure_at_sec ( ABLS_HEURE *ctx, gint heure, gint minute, gint seconde );
 
-/*-- Déclenchement ponctuel à une minute précise ------------------------------------------------------------------------------*/
- extern gboolean Heure_at_min ( HEURE_AT *ctx, gint heure, gint minute );
+/*-- Déclenchement ponctuel à une minute précise -----------------------------------------------------------------------------*/
+ extern gboolean Heure_at_min ( ABLS_HEURE *ctx, gint heure, gint minute );
 
 #endif /* _ABLS_HEURE_H_ */
 /*----------------------------------------------------------------------------------------------------------------------------*/
