@@ -49,12 +49,13 @@ add_library(abls-libs SHARED
   src/config.c
   src/heure.c
   src/fork.c
+  src/string.c
 )
 
 set_target_properties(abls-libs PROPERTIES
   VERSION   ${PROJECT_VERSION}
   SOVERSION ${PROJECT_VERSION_MAJOR}
-  PUBLIC_HEADER "include/info.h;include/json.h;include/mqtt.h;include/config.h;include/heure.h;include/fork.h;include/abls-libs.h"
+  PUBLIC_HEADER "include/info.h;include/json.h;include/mqtt.h;include/config.h;include/heure.h;include/fork.h;include/string.h;include/abls-libs.h"
 )
 
 target_include_directories(abls-libs
