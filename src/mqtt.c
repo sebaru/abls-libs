@@ -77,7 +77,7 @@
     va_start(ap, level_count);
     for (gint i = 0; i < level_count; i++)
      { const gchar *expected = va_arg(ap, const gchar *);
-       if (!expected || !g_strcmp0(expected, "+") == 0) continue;   /* Si attendu est NUL ou "+", on ne controle pas ce champ */
+       if (!expected || g_strcmp0(expected, "+") == 0) continue;    /* Si attendu est NUL ou "+", on ne controle pas ce champ */
 
        gchar name[32];
        g_snprintf ( name, sizeof(name), "mqtt_topic_lvl%d", i );
