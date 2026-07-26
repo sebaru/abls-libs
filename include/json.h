@@ -44,6 +44,7 @@
  extern void       Json_add_double              ( JsonNode *RootNode, gchar *name, gdouble valeur );
  extern void       Json_add_int                 ( JsonNode *RootNode, gchar *name, gint64 valeur );
  extern void       Json_add_null                ( JsonNode *RootNode, gchar *name );
+ extern void       Json_remove                  ( JsonNode *RootNode, gchar *name );
  extern JsonArray *Json_add_array               ( JsonNode *RootNode, gchar *name );
  extern JsonNode  *Json_add_object              ( JsonNode *RootNode, gchar *name );
  extern void       Json_array_add_element       ( JsonArray *array, JsonNode *element );

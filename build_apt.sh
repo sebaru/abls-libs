@@ -7,6 +7,8 @@ NO_SIGN=false
 CLEAN=false
 TARGET_DIST="bookworm"
 TARGET_ARCH=""
+DEB_VERSION_SUFFIX=""
+USE_DIST_SUFFIX=true
 
 usage() {
   cat <<'EOF'
@@ -18,11 +20,13 @@ Options:
   --clean              Remove old .deb artifacts before build
   --dist <suite>       Target suite label for output path (default: bookworm)
   --arch <arch>        Target Debian arch (default: host arch)
+  --version-suffix <s> Debian version suffix override (example: ~trixie)
+  --no-dist-suffix     Disable automatic ~<dist> suffix
   -h, --help           Show this help
 
 Notes:
 - This script uses native build toolchain by default.
-- --dist is used to organize output artifacts only.
+- --dist is used for output path and default Debian version suffix (~<dist>).
 - To sign packages, export DEB_SIGNER_ID and install dpkg-sig.
 EOF
 }
@@ -51,6 +55,15 @@ while [[ $# -gt 0 ]]; do
       [[ -n "$TARGET_ARCH" ]] || { echo "Missing value for --arch"; exit 2; }
       shift 2
       ;;
+    --version-suffix)
+      DEB_VERSION_SUFFIX="${2:-}"
+      [[ -n "$DEB_VERSION_SUFFIX" ]] || { echo "Missing value for --version-suffix"; exit 2; }
+      shift 2
+      ;;
+    --no-dist-suffix)
+      USE_DIST_SUFFIX=false
+      shift
+      ;;
     -h|--help)
       usage
       exit 0
@@ -76,6 +89,10 @@ fi
 
 ARTIFACT_DIR="$BUILD_DIR/deb/$TARGET_DIST/$TARGET_ARCH"
 
+if [[ -z "$DEB_VERSION_SUFFIX" && "$USE_DIST_SUFFIX" == "true" ]]; then
+  DEB_VERSION_SUFFIX="~$TARGET_DIST"
+fi
+
 echo "Building DEB packages for abls-libs..."
 echo "Project directory: $PROJECT_DIR"
 echo "Build directory:   $BUILD_DIR"
@@ -84,18 +101,20 @@ echo "Package-only mode: $PACKAGE_ONLY"
 echo "Signing mode:      $([[ "$NO_SIGN" == "true" ]] && echo disabled || echo enabled)"
 echo "Target suite:      $TARGET_DIST"
 echo "Target arch:       $TARGET_ARCH"
+echo "Version suffix:    ${DEB_VERSION_SUFFIX:-<none>}"
 
 mkdir -p "$BUILD_DIR"
 mkdir -p "$ARTIFACT_DIR"
 
 if [[ "$CLEAN" == "true" ]]; then
-  rm -f "$BUILD_DIR"/abls-libs_*_*.deb "$BUILD_DIR"/abls-libs-dev_*_*.deb
+  rm -f "$BUILD_DIR"/*.deb
   rm -f "$ARTIFACT_DIR"/abls-libs_*_*.deb "$ARTIFACT_DIR"/abls-libs-dev_*_*.deb
 fi
 
 cmake -S "$PROJECT_DIR" -B "$BUILD_DIR" \
   -DCMAKE_INSTALL_PREFIX=/usr \
-  -DCPACK_DEBIAN_PACKAGE_ARCHITECTURE="$TARGET_ARCH"
+  -DCPACK_DEBIAN_PACKAGE_ARCHITECTURE="$TARGET_ARCH" \
+  -DABLS_DEB_VERSION_SUFFIX="$DEB_VERSION_SUFFIX"
 
 if [[ "$PACKAGE_ONLY" == "false" ]]; then
   cmake --build "$BUILD_DIR" -- -j"$(nproc)"
@@ -114,11 +133,11 @@ devel_deb=""
 while IFS= read -r deb_file; do
   if command -v dpkg-deb >/dev/null 2>&1; then
     pkg_name="$(dpkg-deb -f "$deb_file" Package 2>/dev/null || true)"
-    if [[ "$pkg_name" == "abls-libs" ]]; then
+    if [[ "$pkg_name" == "abls-libs" && -z "$runtime_deb" ]]; then
       runtime_deb="$deb_file"
       continue
     fi
-    if [[ "$pkg_name" == "abls-libs-dev" ]]; then
+    if [[ "$pkg_name" == "abls-libs-dev" && -z "$devel_deb" ]]; then
       devel_deb="$deb_file"
       continue
     fi
@@ -126,13 +145,15 @@ while IFS= read -r deb_file; do
 
   case "$(basename "$deb_file")" in
     *-runtime.deb)
+      [[ -z "$runtime_deb" ]] || continue
       runtime_deb="$deb_file"
       ;;
     *-devel.deb|*dev*.deb)
+      [[ -z "$devel_deb" ]] || continue
       devel_deb="$deb_file"
       ;;
   esac
-done < <(find "$BUILD_DIR" -maxdepth 1 -type f -name '*.deb' | sort)
+done < <(find "$BUILD_DIR" -maxdepth 1 -type f -name '*.deb' -printf '%T@ %p\n' | sort -rn | cut -d' ' -f2-)
 
 if [[ -z "$runtime_deb" || -z "$devel_deb" ]]; then
   echo "DEB generation failed: expected runtime and dev packages in $BUILD_DIR"

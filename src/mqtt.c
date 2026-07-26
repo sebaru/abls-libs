@@ -77,7 +77,7 @@
     va_start(ap, level_count);
     for (gint i = 0; i < level_count; i++)
      { const gchar *expected = va_arg(ap, const gchar *);
-       if (!expected || !g_strcmp0(expected, "+") == 0) continue;   /* Si attendu est NUL ou "+", on ne controle pas ce champ */
+       if (!expected || g_strcmp0(expected, "+") == 0) continue;    /* Si attendu est NUL ou "+", on ne controle pas ce champ */
 
        gchar name[32];
        g_snprintf ( name, sizeof(name), "mqtt_topic_lvl%d", i );
@@ -257,6 +257,7 @@
           g_snprintf ( name, sizeof(name), "mqtt_topic_lvl%d", i );
           Json_add_string ( message, name, tokens[i] );         /* Ajoute les tokens dans le node pour traitement plus simple */
         }
+       Json_add_string ( message, "mqtt_topic", msg->topic );                         /* Ajoute le topic complet dans le node */
        g_async_queue_push ( mqtt->queue, message );/* Ajoute le message dans la queue pour traitement par le thread principal */
      }
     g_strfreev( tokens );                                                                      /* Libération des tokens topic */
@@ -291,7 +292,7 @@
 
     gboolean free_node=FALSE;
     if (!node) { node = Json_create(); free_node = TRUE; }
-    Json_add_int ( node, "mqtt_time", time(NULL) );
+    /*Json_add_int ( node, "mqtt_time", time(NULL) );*/
     gchar *buffer = Json_to_string ( node );
     if (!buffer) goto end;
 
