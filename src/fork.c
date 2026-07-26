@@ -58,68 +58,65 @@
     return(argv);
   }
 /******************************************************************************************************************************/
-/* Exec_wait_child: Attend le fils et traduit le statut en code de retour exploitable                                        */
+/* Exec_run_internal: Lance une commande via fork puis execvp, eventuellement via sudo -n                                     */
 /******************************************************************************************************************************/
- static gint Exec_wait_child ( pid_t pid, const gchar *command )
-  { gint status;
-
-    while (waitpid(pid, &status, 0) < 0)
-     { if (errno == EINTR) continue;
-       Info( __func__, FACILITY_FORK, NULL, LOG_ERR, "waitpid failed for '%s': %s", command, g_strerror(errno) );
-       return(-1);
-     }
-
-    if (WIFEXITED(status))
-     { gint retour = WEXITSTATUS(status);
-       Info( __func__, FACILITY_FORK, NULL, LOG_NOTICE, "Command '%s' exited with code %d", command, retour );
-       return(retour);
-     }
-
-    if (WIFSIGNALED(status))
-     { gint retour = 128 + WTERMSIG(status);
-       Info( __func__, FACILITY_FORK, NULL, LOG_ERR, "Command '%s' killed by signal %d", command, WTERMSIG(status) );
-       return(retour);
-     }
-
-    Info( __func__, FACILITY_FORK, NULL, LOG_ERR, "Command '%s' ended with unsupported wait status", command );
-    return(-1);
-  }
-/******************************************************************************************************************************/
-/* Exec_run_internal: Lance une commande via fork puis execvp, eventuellement via sudo -n                                   */
-/******************************************************************************************************************************/
- static gint Exec_run_internal ( gboolean use_sudo, const gchar *command, va_list ap )
-  { if (!command || !command[0])
+ static gint Exec_run_internal ( gboolean use_sudo, const gchar *commande_brute, va_list ap )
+  { if (!commande_brute || !commande_brute[0])
      { Info( __func__, FACILITY_FORK, NULL, LOG_WARNING, "Empty command refused" );
        return(-1);
      }
 
-    GPtrArray *argv = Exec_build_argv(use_sudo, command, ap);
+    GPtrArray *argv = Exec_build_argv(use_sudo, commande_brute, ap);
     if (!argv)
-     { Info( __func__, FACILITY_FORK, NULL, LOG_ALERT, "Memory error building argv for '%s'", command );
+     { Info( __func__, FACILITY_FORK, NULL, LOG_ALERT, "Memory error building argv for '%s'", commande_brute );
        return(-1);
      }
 
-    gchar *commande = g_strjoinv(" ", (gchar **)argv->pdata);
-    Info( __func__, FACILITY_FORK, NULL, LOG_NOTICE, "Launching command: %s", commande ? commande : command );
+    gint retour = -1;
+    gchar *commande_full = g_strjoinv(" ", (gchar **)argv->pdata);
+    if (!commande_full)
+     { Info( __func__, FACILITY_FORK, NULL, LOG_ALERT, "Memory error building full command for '%s'", commande_brute );
+       goto end;
+     }
+
+    Info( __func__, FACILITY_FORK, NULL, LOG_NOTICE, "Launching command: %s", commande_full );
 
     pid_t pid = fork();
-    if (pid < 0)
-     { Info( __func__, FACILITY_FORK, NULL, LOG_ERR, "fork failed for '%s': %s", command, g_strerror(errno) );
-       if (commande) g_free(commande);
-       g_ptr_array_free(argv, TRUE);
-       return(-1);
+    if (pid < 0)                                                                                         /* Si erreur de fork */
+     { Info( __func__, FACILITY_FORK, NULL, LOG_ERR, "fork failed for '%s': %s", commande_full, g_strerror(errno) );
+       goto end;
      }
 
-    if (pid == 0)
+    if (pid == 0)                                                                                 /* Lancement de la commande */
      { execvp( (gchar *)argv->pdata[0], (gchar * const *)argv->pdata );
-       Info( __func__, FACILITY_FORK, NULL, LOG_ERR, "execvp failed for '%s': %s", command, g_strerror(errno) );
+       Info( __func__, FACILITY_FORK, NULL, LOG_ERR, "execvp failed for '%s': %s", commande_full, g_strerror(errno) );
        _exit(ABLS_EXEC_FAILED);
      }
 
-    Info( __func__, FACILITY_FORK, NULL, LOG_NOTICE, "Forked pid %d for '%s'", pid, command );
-    if (commande) g_free(commande);
+    Info( __func__, FACILITY_FORK, NULL, LOG_NOTICE, "Forked pid %d for '%s'", pid, commande_full );          /* Dans le pere */
+
+    gint status;
+    while (waitpid(pid, &status, 0) < 0)
+     { if (errno == EINTR) continue;
+       Info( __func__, FACILITY_FORK, NULL, LOG_ERR, "waitpid failed for '%s': %s", commande_full, g_strerror(errno) );
+       goto end;
+     }
+
+    if (WIFEXITED(status))
+     { retour = WEXITSTATUS(status);
+       Info( __func__, FACILITY_FORK, NULL, LOG_NOTICE, "Command '%s' exited with code %d", commande_full, retour );
+     }
+    else if (WIFSIGNALED(status))
+     { retour = 128 + WTERMSIG(status);
+       Info( __func__, FACILITY_FORK, NULL, LOG_ERR, "Command '%s' killed by signal %d", commande_full, WTERMSIG(status) );
+       goto end;
+     }
+
+end:
+    if (commande_full) g_free(commande_full);
     g_ptr_array_free(argv, TRUE);
-    return( Exec_wait_child(pid, command) );
+
+    return( retour );
   }
 /******************************************************************************************************************************/
 /* Exec: Lance directement la commande demandee                                                                              */
