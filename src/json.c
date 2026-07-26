@@ -190,6 +190,17 @@
     json_object_set_null_member   ( object, name );
   }
 /******************************************************************************************************************************/
+/* Json_remove: Supprime un membre du RootNode                                                                                */
+/* Entrée: le RootNode, le nom du parametre                                                                                   */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void Json_remove ( JsonNode *RootNode, gchar *name )
+  { if (!RootNode) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", name ); return; }
+    JsonObject *object = json_node_get_object (RootNode);
+    if (!object) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Object is null for '%s'", name ); return; }
+    json_object_remove_member ( object, name );
+  }
+/******************************************************************************************************************************/
 /* Json_add_array: Ajoute un enregistrement name/array dans le RootNode                                                       */
 /* Entrée: le RootNode, le nom du parametre, la valeur                                                                        */
 /* Sortie: néant                                                                                                              */
