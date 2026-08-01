@@ -93,7 +93,7 @@
        _exit(ABLS_EXEC_FAILED);
      }
 
-    Info( __func__, FACILITY_FORK, NULL, LOG_NOTICE, "Forked pid %d for '%s'", pid, commande_full );          /* Dans le pere */
+    Info( __func__, FACILITY_FORK, NULL, LOG_INFO, "Forked pid %d for '%s'", pid, commande_full );          /* Dans le pere */
 
     gint status;
     while (waitpid(pid, &status, 0) < 0)
@@ -104,7 +104,7 @@
 
     if (WIFEXITED(status))
      { retour = WEXITSTATUS(status);
-       Info( __func__, FACILITY_FORK, NULL, LOG_NOTICE, "Command '%s' exited with code %d", commande_full, retour );
+       Info( __func__, FACILITY_FORK, NULL, LOG_INFO, "Command '%s' exited with code %d", commande_full, retour );
      }
     else if (WIFSIGNALED(status))
      { retour = 128 + WTERMSIG(status);

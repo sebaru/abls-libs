@@ -38,6 +38,7 @@ pkg_check_modules(GLIB    REQUIRED glib-2.0)
 pkg_check_modules(GTHREAD REQUIRED gthread-2.0)
 pkg_check_modules(JSON_GLIB REQUIRED json-glib-1.0)
 pkg_check_modules(MOSQUITTO REQUIRED libmosquitto)
+pkg_check_modules(UUID REQUIRED uuid)
 
 ##################################################################################################################################
 # Librairie partagée
@@ -50,12 +51,13 @@ add_library(abls-libs SHARED
   src/heure.c
   src/fork.c
   src/string.c
+  src/uuid.c
 )
 
 set_target_properties(abls-libs PROPERTIES
   VERSION   ${PROJECT_VERSION}
   SOVERSION ${PROJECT_VERSION_MAJOR}
-  PUBLIC_HEADER "include/info.h;include/json.h;include/mqtt.h;include/config.h;include/heure.h;include/fork.h;include/string.h;include/abls-libs.h"
+  PUBLIC_HEADER "include/info.h;include/json.h;include/mqtt.h;include/config.h;include/heure.h;include/fork.h;include/string.h;include/uuid.h;include/abls-libs.h"
 )
 
 target_include_directories(abls-libs
@@ -67,6 +69,7 @@ target_include_directories(abls-libs
     ${GTHREAD_INCLUDE_DIRS}
     ${JSON_GLIB_INCLUDE_DIRS}
     ${MOSQUITTO_INCLUDE_DIRS}
+    ${UUID_INCLUDE_DIRS}
 )
 
 target_compile_options(abls-libs PRIVATE
@@ -82,6 +85,7 @@ target_link_libraries(abls-libs PRIVATE
   ${GTHREAD_LIBRARIES}
   ${JSON_GLIB_LIBRARIES}
   ${MOSQUITTO_LIBRARIES}
+  ${UUID_LIBRARIES}
 )
 
 ##################################################################################################################################
