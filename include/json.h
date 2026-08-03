@@ -54,6 +54,8 @@
  extern guint      Json_array_get_length        ( JsonNode *RootNode, gchar *array_name );
  extern void       Json_foreach_array_element   ( JsonNode *RootNode, gchar *array_name,
                                                   JsonArrayForeach fonction, gpointer data );
+ extern void       Json_foreach_array_element_by_thread ( JsonNode *RootNode, gchar *array_name,
+                                                          JsonArrayForeach fonction, gpointer fonction_data, guint max_threads );
 
 /*-- Conversion string / parsing ---------------------------------------------------------------------------------------------*/
  extern gchar     *Json_to_string               ( JsonNode *RootNode );

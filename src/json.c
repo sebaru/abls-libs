@@ -35,6 +35,20 @@
  #include <fcntl.h>
  #include <errno.h>
 
+ struct ABLS_JSON_ARRAY_THREADS
+  { gatomicrefcount thread_count;
+    guint max_threads;
+    JsonArrayForeach fonction;
+    JsonArray *array;
+    gpointer fonction_data;
+  };
+
+ struct ABLS_JSON_ARRAY_THREAD
+  { struct ABLS_JSON_ARRAY_THREADS *threads;
+    JsonNode *element;
+    guint index;
+  };
+
 /******************************************************************************************************************************/
 /* Json_create: Prepare un RootNode pour creer un nouveau buffer json                                                         */
 /* Entrée: néant                                                                                                              */
@@ -284,6 +298,60 @@
  void Json_foreach_array_element ( JsonNode *RootNode, gchar *array_name, JsonArrayForeach fonction, gpointer data )
   { if (!RootNode) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", array_name ); return; }
     json_array_foreach_element ( Json_get_array ( RootNode, array_name ), fonction, data );
+  }
+/******************************************************************************************************************************/
+/* Json_foreach_array_element_by_thread_handle_one: Appelle la fonction by_thread sur un element de tableau en parametre      */
+/* Entrée: les parametres locaux du thread                                                                                    */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static gpointer Json_foreach_array_element_by_thread_handle_one ( gpointer user_data )
+  { struct ABLS_JSON_ARRAY_THREAD *thread_data = user_data;
+    thread_data->threads->fonction ( thread_data->threads->array, thread_data->index,
+                                     thread_data->element, thread_data->threads->fonction_data );
+    return(NULL);
+  }
+/******************************************************************************************************************************/
+/* Json_foreach_array_element_by_thread_start_one: Lance un thread sur un element de tableau                                  */
+/* Entrée: le RootNode, le nom du parametre, la fonction et les donnees utilisateur                                           */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void Json_foreach_array_element_by_thread_start_one ( JsonArray *array, guint index, JsonNode *element, gpointer user_data )
+  { struct ABLS_JSON_ARRAY_THREADS *threads = user_data;
+    while ( g_atomic_int_get ( &threads->thread_count ) >= threads->max_threads ) sched_yield();
+
+    struct ABLS_JSON_ARRAY_THREAD *thread_data = g_try_malloc0 ( sizeof (struct ABLS_JSON_ARRAY_THREAD) );
+    if (!thread_data) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Unable to allocate memory for thread data" ); return; }
+    thread_data->threads       = threads;
+    thread_data->element       = element;
+    thread_data->index         = index;
+    g_atomic_int_inc ( &thread_data->threads->thread_count );
+    GThread *thread = g_thread_new ( "json_array_by_thread", Json_foreach_array_element_by_thread_handle_one, thread_data );
+    g_thread_join ( thread );
+    g_atomic_int_dec_and_test ( &thread_data->threads->thread_count );
+    g_free ( thread_data );
+  }
+/******************************************************************************************************************************/
+/* Json_foreach_array_element_by_thread: Lance une fonction en parametre sur chaque element du tableau avec autant de thread  */
+/* Entrée: le RootNode, le nom du parametre, la fonction et les donnees utilisateur                                           */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void Json_foreach_array_element_by_thread ( JsonNode *RootNode, gchar *array_name,
+                                             JsonArrayForeach fonction, gpointer fonction_data, guint max_threads )
+  { if (!RootNode) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", array_name ); return; }
+    JsonArray *array = Json_get_array ( RootNode, array_name );
+    if (!array) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Array is NULL for '%s'", array_name ); return; }
+
+    struct ABLS_JSON_ARRAY_THREADS *threads = g_try_malloc0 ( sizeof (struct ABLS_JSON_ARRAY_THREADS) );
+    if (!threads) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Unable to allocate memory for threads" ); return; }
+    g_atomic_int_set ( &threads->thread_count, 0 );
+    threads->max_threads   = max_threads;
+    threads->array         = array;
+    threads->fonction      = fonction;
+    threads->fonction_data = fonction_data;
+
+    json_array_foreach_element ( array, Json_foreach_array_element_by_thread_start_one, &threads );
+    while ( g_atomic_int_get ( &threads->thread_count ) > 0 ) sched_yield();
+    g_free ( threads );
   }
 /******************************************************************************************************************************/
 /* Json_to_string: transforme un JsonNode en string                                                                           */
