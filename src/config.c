@@ -235,7 +235,7 @@
                 break;
               }
              case CONFIG_INT :
-              { Json_add_int(target, name, parameter->valeur_int);
+              { if (parameter->valeur_int != 0) Json_add_int(target, name, parameter->valeur_int);
                 break;
               }
              default : Info ( __func__, FACILITY_CONFIG, NULL, LOG_ERR,
