@@ -349,7 +349,7 @@
     threads->fonction      = fonction;
     threads->fonction_data = fonction_data;
 
-    json_array_foreach_element ( array, Json_foreach_array_element_by_thread_start_one, &threads );
+    json_array_foreach_element ( array, Json_foreach_array_element_by_thread_start_one, threads );
     while ( g_atomic_int_get ( &threads->thread_count ) > 0 ) sched_yield();
     g_free ( threads );
   }
