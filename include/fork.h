@@ -35,7 +35,6 @@
 /*-- Execution de processus --------------------------------------------------------------------------------------------------*/
 /* Les arguments doivent etre termines par NULL. Retourne le code de sortie du programme lance, -1 si erreur interne.       */
  extern gint Exec      ( const gchar *command, ... );
- extern gint Exec_sudo ( const gchar *command, ... );
 
 #endif /* _ABLS_FORK_H_ */
 /*----------------------------------------------------------------------------------------------------------------------------*/

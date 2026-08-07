@@ -35,51 +35,24 @@
  #define ABLS_EXEC_FAILED 127
 
 /******************************************************************************************************************************/
-/* Exec_build_argv: Construit un argv NULL-termine a partir des arguments variadiques                                        */
+/* Exec_run: Lance une commande via fork puis execvp                                                                          */
 /******************************************************************************************************************************/
- static GPtrArray *Exec_build_argv ( gboolean use_sudo, const gchar *command, va_list ap )
-  { GPtrArray *argv;
-    const gchar *arg;
-
-    if (!command || !command[0]) return(NULL);
-
-    argv = g_ptr_array_new();
-    if (!argv) return(NULL);
-
-    if (use_sudo)
-     { g_ptr_array_add(argv, (gpointer)"sudo");
-       g_ptr_array_add(argv, (gpointer)"-n");
-     }
-
-    g_ptr_array_add(argv, (gpointer)command);
-    while ( (arg = va_arg(ap, const gchar *)) != NULL )
-     { g_ptr_array_add(argv, (gpointer)arg); }
-    g_ptr_array_add(argv, NULL);
-    return(argv);
-  }
-/******************************************************************************************************************************/
-/* Exec_run_internal: Lance une commande via fork puis execvp, eventuellement via sudo -n                                     */
-/******************************************************************************************************************************/
- static gint Exec_run_internal ( gboolean use_sudo, const gchar *commande_brute, va_list ap )
-  { if (!commande_brute || !commande_brute[0])
+ static gint Exec_run ( const gchar *commande_full )
+  { if (!commande_full)
      { Info( __func__, FACILITY_FORK, NULL, LOG_WARNING, "Empty command refused" );
        return(-1);
      }
 
-    GPtrArray *argv = Exec_build_argv(use_sudo, commande_brute, ap);
-    if (!argv)
-     { Info( __func__, FACILITY_FORK, NULL, LOG_ALERT, "Memory error building argv for '%s'", commande_brute );
+    GError *error = NULL;
+    gchar **argv = NULL;
+    if ( g_shell_parse_argv( commande_full, NULL, &argv, &error ) == FALSE )
+     { Info( __func__, FACILITY_FORK, NULL, LOG_ALERT, "Memory error building argv for '%s': %s",
+             commande_full, error->message );
+       g_error_free(error);
        return(-1);
      }
 
-    gint retour = -1;
-    gchar *commande_full = g_strjoinv(" ", (gchar **)argv->pdata);
-    if (!commande_full)
-     { Info( __func__, FACILITY_FORK, NULL, LOG_ALERT, "Memory error building full command for '%s'", commande_brute );
-       goto end;
-     }
-
-    Info( __func__, FACILITY_FORK, NULL, LOG_NOTICE, "Launching command: %s", commande_full );
+    Info( __func__, FACILITY_FORK, NULL, LOG_NOTICE, "Running command: %s", commande_full );
 
     pid_t pid = fork();
     if (pid < 0)                                                                                         /* Si erreur de fork */
@@ -88,12 +61,12 @@
      }
 
     if (pid == 0)                                                                                 /* Lancement de la commande */
-     { execvp( (gchar *)argv->pdata[0], (gchar * const *)argv->pdata );
+     { execvp( (gchar *)argv[0], argv );
        Info( __func__, FACILITY_FORK, NULL, LOG_ERR, "execvp failed for '%s': %s", commande_full, g_strerror(errno) );
        _exit(ABLS_EXEC_FAILED);
      }
 
-    Info( __func__, FACILITY_FORK, NULL, LOG_INFO, "Forked pid %d for '%s'", pid, commande_full );          /* Dans le pere */
+    Info( __func__, FACILITY_FORK, NULL, LOG_INFO, "Forked pid %d for '%s'", pid, commande_full );            /* Dans le pere */
 
     gint status;
     while (waitpid(pid, &status, 0) < 0)
@@ -103,43 +76,28 @@
      }
 
     if (WIFEXITED(status))
-     { retour = WEXITSTATUS(status);
-       Info( __func__, FACILITY_FORK, NULL, LOG_INFO, "Command '%s' exited with code %d", commande_full, retour );
+     { status = WEXITSTATUS(status);
+       Info( __func__, FACILITY_FORK, NULL, LOG_INFO, "Command '%s' exited with code %d", commande_full, status );
      }
     else if (WIFSIGNALED(status))
-     { retour = 128 + WTERMSIG(status);
+     { status = 128 + WTERMSIG(status);
        Info( __func__, FACILITY_FORK, NULL, LOG_ERR, "Command '%s' killed by signal %d", commande_full, WTERMSIG(status) );
        goto end;
      }
 
 end:
-    if (commande_full) g_free(commande_full);
-    g_ptr_array_free(argv, TRUE);
-
-    return( retour );
+    g_strfreev(argv);
+    return( status );
   }
 /******************************************************************************************************************************/
 /* Exec: Lance directement la commande demandee                                                                              */
 /******************************************************************************************************************************/
  gint Exec ( const gchar *command, ... )
-  { va_list ap;
-    gint retour;
-
+  { gchar commande_full[256];
+    va_list ap;
     va_start(ap, command);
-    retour = Exec_run_internal(FALSE, command, ap);
+    g_vsnprintf(commande_full, sizeof(commande_full), command, ap);
     va_end(ap);
-    return(retour);
-  }
-/******************************************************************************************************************************/
-/* Exec_sudo: Lance la commande demandee en la prefixant par sudo -n                                                         */
-/******************************************************************************************************************************/
- gint Exec_sudo ( const gchar *command, ... )
-  { va_list ap;
-    gint retour;
-
-    va_start(ap, command);
-    retour = Exec_run_internal(TRUE, command, ap);
-    va_end(ap);
-    return(retour);
+    return ( Exec_run(commande_full) );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
