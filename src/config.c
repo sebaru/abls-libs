@@ -129,7 +129,7 @@
 
     if (!target || !filename) return;
 
-    Info ( __func__, FACILITY_CONFIG, NULL, LOG_NOTICE, "Trying to read config file '%s'", filename );
+    Info ( __func__, FACILITY_CONFIG, NULL, LOG_INFO, "Trying to read config file '%s'", filename );
     JsonNode *from_file = Json_read_from_file ( (gchar *)filename );
     if (from_file)                                                              /* Copy des elements de from_file vers target */
      { JsonObject *fromFileObject = json_node_get_object(from_file);                        /* Récupération de l'objet source */
@@ -151,7 +151,7 @@
 
     if (!target) return;
 
-    Info ( __func__, FACILITY_CONFIG, NULL, LOG_NOTICE, "Apply ENVironment Variables" );
+    Info ( __func__, FACILITY_CONFIG, NULL, LOG_INFO, "Apply ENVironment Variables" );
     env_vars = g_listenv();                                               /* Récupérer la liste des variables d'environnement */
     for (env = env_vars; *env != NULL; env++)                                               /* Parcourir toutes les variables */
      { const gchar *prefixe = "ABLS_";
