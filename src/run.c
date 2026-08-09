@@ -106,13 +106,13 @@ end:
     return ( Run_shell_real(commande_full) );
   }
 /******************************************************************************************************************************/
-/* Run_thread_join: Lance un thread GLib et attend sa terminaison                                                             */
+/* Run_thread_with_join: Lance un thread GLib et attend sa terminaison                                                        */
 /* Entree: name          - nom du thread (peut etre NULL)                                                                     */
 /*         func          - fonction du thread (GThreadFunc)                                                                   */
 /*         data          - donnee passee a la fonction du thread                                                              */
 /* Sortie: valeur de retour du thread, NULL si erreur de creation                                                             */
 /******************************************************************************************************************************/
- gpointer Run_thread_join ( const gchar *name, GThreadFunc func, gpointer data )
+ gpointer Run_thread_with_join ( const gchar *name, GThreadFunc func, gpointer data )
   { if (!name) name = "New_thread";
     GThread *thread = g_thread_new ( name, func, data );
     if (!thread)
@@ -124,5 +124,55 @@ end:
     Info( __func__, FACILITY_RUN, name, LOG_INFO, "Thread '%s' joined", name );
     return(retval);
   }
+/******************************************************************************************************************************/
+/* Run_thread_pool_init: Initialise un pool de threads GLib                                                                   */
+/* Entree: name          - nom du pool (NULL pour "default_pool")                                                             */
+/*         pool_fonction - fonction a executer pour chaque tache (GFunc)                                                      */
+/*         pool_data     - donnees utilisateur transmises a chaque appel de pool_fonction                                     */
+/*         max_threads   - nombre maximum de threads dans le pool                                                             */
+/* Sortie: pointeur sur ABLS_RUN_POOL si succes, NULL si erreur                                                               */
+/******************************************************************************************************************************/
+ struct ABLS_RUN_POOL *Run_thread_pool_init ( gchar *name, GFunc pool_fonction, gpointer pool_data, guint max_threads )
+  { if (!name) name = "New_pool";
+    if (!pool_fonction) { Info ( __func__, FACILITY_RUN, name, LOG_ERR, "Function is NULL" ); return(NULL); }
 
+    struct ABLS_RUN_POOL *abls_pool = g_try_malloc0 ( sizeof (struct ABLS_RUN_POOL) );
+    if (!abls_pool) { Info ( __func__, FACILITY_RUN, name, LOG_ERR, "Unable to allocate memory for abls_pool" ); return(NULL); }
+
+    abls_pool->g_pool = g_thread_pool_new ( pool_fonction, pool_data, max_threads, TRUE, NULL );
+    if (!abls_pool->g_pool)
+     { Info ( __func__, FACILITY_RUN, name, LOG_ERR, "Unable to allocate memory for abls_pool->g_pool" );
+       g_free(abls_pool);
+       return(NULL);
+     }
+    g_snprintf ( abls_pool->name, sizeof(abls_pool->name), "%s", name );
+    abls_pool->max_threads    = max_threads;
+    abls_pool->pool_fonction  = pool_fonction;
+    abls_pool->pool_data      = pool_data;
+    Info ( __func__, FACILITY_RUN, abls_pool->name, LOG_INFO, "Starting pool with '%d' threads", abls_pool->max_threads );
+    return(abls_pool);
+  }
+/******************************************************************************************************************************/
+/* Run_thread_pool_push: Ajoute une tache au pool de threads pour execution                                                   */
+/* Entree: abls_pool     - pool initialise par Run_thread_pool_init                                                           */
+/*         fonction_data - donnees a traiter par la fonction du pool                                                          */
+/* Sortie: neant                                                                                                              */
+/******************************************************************************************************************************/
+ void Run_thread_pool_push ( struct ABLS_RUN_POOL *abls_pool, gpointer fonction_data )
+  { if (!abls_pool) { Info ( __func__, FACILITY_RUN, NULL, LOG_ERR, "Pool is NULL" ); return; }
+    if (!g_thread_pool_push ( abls_pool->g_pool, fonction_data, NULL ))
+     { Info ( __func__, FACILITY_RUN, abls_pool->name, LOG_ERR, "Unable to push data to pool" ); }
+  }
+/******************************************************************************************************************************/
+/* Run_thread_pool_end: Termine et libere les ressources du pool de threads                                                   */
+/* Entree: abls_pool           - pool a terminer                                                                              */
+/*         wait_for_completion - TRUE pour attendre les threads en cours, FALSE sinon                                         */
+/* Sortie: neant                                                                                                              */
+/******************************************************************************************************************************/
+ void Run_thread_pool_end ( struct ABLS_RUN_POOL *abls_pool, gboolean wait_for_completion )
+  { if (!abls_pool) { Info ( __func__, FACILITY_RUN, NULL, LOG_ERR, "Pool is NULL" ); return; }
+    g_thread_pool_free ( abls_pool->g_pool, FALSE, wait_for_completion );
+    Info ( __func__, FACILITY_RUN, abls_pool->name, LOG_INFO, "Pool ended" );
+    g_free ( abls_pool );
+  }
 /*----------------------------------------------------------------------------------------------------------------------------*/

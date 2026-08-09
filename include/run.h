@@ -32,12 +32,24 @@
 
  #define FACILITY_RUN  "run"
 
+ struct ABLS_RUN_POOL
+  { GThreadPool *g_pool;
+    gchar       name[128];
+    guint       max_threads;
+    GFunc       pool_fonction;
+    gpointer    pool_data;
+    guint       chrono;
+  };
+
 /*-- Execution de processus --------------------------------------------------------------------------------------------------*/
 /* Les arguments doivent etre termines par NULL. Retourne le code de sortie du programme lance, -1 si erreur interne.       */
  extern gint     Run_shell       ( const gchar *command, ... );
 
 /*-- Execution de threads ----------------------------------------------------------------------------------------------------*/
- extern gpointer Run_thread_join ( const gchar *name, GThreadFunc func, gpointer data );
+ extern gpointer             Run_thread_with_join  ( const gchar *name, GThreadFunc func, gpointer data );
+ extern struct ABLS_RUN_POOL *Run_thread_pool_init ( gchar *name, GFunc pool_fonction, gpointer pool_data, guint max_threads );
+ extern void                 Run_thread_pool_push ( struct ABLS_RUN_POOL *abls_pool, gpointer fonction_data );
+ extern void                 Run_thread_pool_end  ( struct ABLS_RUN_POOL *abls_pool, gboolean wait_for_completion );
 
 #endif /* _ABLS_RUN_H_ */
 /*----------------------------------------------------------------------------------------------------------------------------*/
