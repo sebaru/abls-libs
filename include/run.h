@@ -1,10 +1,10 @@
 /******************************************************************************************************************************/
-/* include/fork.h      Declaration des helpers d'execution fork/exec — abls-libs                                            */
+/* include/run.h       Declaration des helpers d'execution fork/exec — abls-libs                                            */
 /* Projet Abls-Habitat version 1.0       Gestion d'habitat                                                22.07.2026          */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
- * fork.h
+ * run.h
  * This file is part of Abls-Libs
  *
  * Copyright (C) 1988-2026 - Sébastien LEFÈVRE
@@ -25,16 +25,19 @@
  * Boston, MA  02110-1301  USA
  */
 
-#ifndef _ABLS_FORK_H_
- #define _ABLS_FORK_H_
+#ifndef _ABLS_RUN_H_
+ #define _ABLS_RUN_H_
 
  #include <glib.h>
 
- #define FACILITY_FORK "fork"
+ #define FACILITY_RUN  "run"
 
 /*-- Execution de processus --------------------------------------------------------------------------------------------------*/
 /* Les arguments doivent etre termines par NULL. Retourne le code de sortie du programme lance, -1 si erreur interne.       */
- extern gint Exec      ( const gchar *command, ... );
+ extern gint     Run_shell       ( const gchar *command, ... );
 
-#endif /* _ABLS_FORK_H_ */
+/*-- Execution de threads ----------------------------------------------------------------------------------------------------*/
+ extern gpointer Run_thread_join ( const gchar *name, GThreadFunc func, gpointer data );
+
+#endif /* _ABLS_RUN_H_ */
 /*----------------------------------------------------------------------------------------------------------------------------*/

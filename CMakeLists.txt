@@ -49,7 +49,7 @@ add_library(abls-libs SHARED
   src/mqtt.c
   src/config.c
   src/heure.c
-  src/fork.c
+  src/run.c
   src/string.c
   src/uuid.c
 )
@@ -57,7 +57,7 @@ add_library(abls-libs SHARED
 set_target_properties(abls-libs PROPERTIES
   VERSION   ${PROJECT_VERSION}
   SOVERSION ${PROJECT_VERSION_MAJOR}
-  PUBLIC_HEADER "include/info.h;include/json.h;include/mqtt.h;include/config.h;include/heure.h;include/fork.h;include/string.h;include/uuid.h;include/abls-libs.h"
+  PUBLIC_HEADER "include/info.h;include/json.h;include/mqtt.h;include/config.h;include/heure.h;include/run.h;include/string.h;include/uuid.h;include/abls-libs.h"
 )
 
 target_include_directories(abls-libs

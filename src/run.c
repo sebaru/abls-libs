@@ -1,10 +1,10 @@
 /******************************************************************************************************************************/
-/* src/fork.c           Helpers d'execution fork/exec partages — abls-libs                                                  */
+/* src/run.c            Helpers d'execution fork/exec partages — abls-libs                                                  */
 /* Projet Abls-Habitat version 1.0       Gestion d'habitat                                                22.07.2026          */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
- * fork.c
+ * run.c
  * This file is part of Abls-Libs
  *
  * Copyright (C) 1988-2026 - Sébastien LEFÈVRE
@@ -35,53 +35,55 @@
  #define ABLS_EXEC_FAILED 127
 
 /******************************************************************************************************************************/
-/* Exec_run: Lance une commande via fork puis execvp                                                                          */
+/* Run_shell_real: Lance une commande via fork puis execvp                                                                    */
+/* Entree: commande_full - commande complete a executer (chaine null-terminee)                                                */
+/* Sortie: code de retour du processus fils, -1 si erreur interne, 128+signal si tue par signal                               */
 /******************************************************************************************************************************/
- static gint Exec_run ( const gchar *commande_full )
+ static gint Run_shell_real ( const gchar *commande_full )
   { if (!commande_full)
-     { Info( __func__, FACILITY_FORK, NULL, LOG_WARNING, "Empty command refused" );
+     { Info( __func__, FACILITY_RUN, NULL, LOG_WARNING, "Empty command refused" );
        return(-1);
      }
 
     GError *error = NULL;
     gchar **argv = NULL;
     if ( g_shell_parse_argv( commande_full, NULL, &argv, &error ) == FALSE )
-     { Info( __func__, FACILITY_FORK, NULL, LOG_ALERT, "Memory error building argv for '%s': %s",
+     { Info( __func__, FACILITY_RUN, NULL, LOG_ALERT, "Memory error building argv for '%s': %s",
              commande_full, error->message );
        g_error_free(error);
        return(-1);
      }
 
-    Info( __func__, FACILITY_FORK, NULL, LOG_NOTICE, "Running command: %s", commande_full );
+    Info( __func__, FACILITY_RUN, NULL, LOG_NOTICE, "Running command: %s", commande_full );
 
     pid_t pid = fork();
     if (pid < 0)                                                                                         /* Si erreur de fork */
-     { Info( __func__, FACILITY_FORK, NULL, LOG_ERR, "fork failed for '%s': %s", commande_full, g_strerror(errno) );
+     { Info( __func__, FACILITY_RUN, NULL, LOG_ERR, "fork failed for '%s': %s", commande_full, g_strerror(errno) );
        goto end;
      }
 
     if (pid == 0)                                                                                 /* Lancement de la commande */
      { execvp( (gchar *)argv[0], argv );
-       Info( __func__, FACILITY_FORK, NULL, LOG_ERR, "execvp failed for '%s': %s", commande_full, g_strerror(errno) );
+       Info( __func__, FACILITY_RUN, NULL, LOG_ERR, "execvp failed for '%s': %s", commande_full, g_strerror(errno) );
        _exit(ABLS_EXEC_FAILED);
      }
 
-    Info( __func__, FACILITY_FORK, NULL, LOG_INFO, "Forked pid %d for '%s'", pid, commande_full );            /* Dans le pere */
+    Info( __func__, FACILITY_RUN, NULL, LOG_INFO, "Forked pid %d for '%s'", pid, commande_full );             /* Dans le pere */
 
     gint status;
     while (waitpid(pid, &status, 0) < 0)
      { if (errno == EINTR) continue;
-       Info( __func__, FACILITY_FORK, NULL, LOG_ERR, "waitpid failed for '%s': %s", commande_full, g_strerror(errno) );
+       Info( __func__, FACILITY_RUN, NULL, LOG_ERR, "waitpid failed for '%s': %s", commande_full, g_strerror(errno) );
        goto end;
      }
 
     if (WIFEXITED(status))
      { status = WEXITSTATUS(status);
-       Info( __func__, FACILITY_FORK, NULL, LOG_INFO, "Command '%s' exited with code %d", commande_full, status );
+       Info( __func__, FACILITY_RUN, NULL, LOG_INFO, "Command '%s' exited with code %d", commande_full, status );
      }
     else if (WIFSIGNALED(status))
      { status = 128 + WTERMSIG(status);
-       Info( __func__, FACILITY_FORK, NULL, LOG_ERR, "Command '%s' killed by signal %d", commande_full, WTERMSIG(status) );
+       Info( __func__, FACILITY_RUN, NULL, LOG_ERR, "Command '%s' killed by signal %d", commande_full, WTERMSIG(status) );
        goto end;
      }
 
@@ -90,14 +92,37 @@ end:
     return( status );
   }
 /******************************************************************************************************************************/
-/* Exec: Lance directement la commande demandee                                                                              */
+/* Run_shell: Lance la commande demandee apres formatage printf-like de la chaine                                             */
+/* Entree: command       - format de la commande (style printf)                                                               */
+/*         ...           - arguments variables pour le formatage                                                              */
+/* Sortie: code de retour du processus fils, -1 si erreur interne, 128+signal si tue par signal                               */
 /******************************************************************************************************************************/
- gint Exec ( const gchar *command, ... )
+ gint Run_shell ( const gchar *command, ... )
   { gchar commande_full[256];
     va_list ap;
     va_start(ap, command);
     g_vsnprintf(commande_full, sizeof(commande_full), command, ap);
     va_end(ap);
-    return ( Exec_run(commande_full) );
+    return ( Run_shell_real(commande_full) );
   }
+/******************************************************************************************************************************/
+/* Run_thread_join: Lance un thread GLib et attend sa terminaison                                                             */
+/* Entree: name          - nom du thread (peut etre NULL)                                                                     */
+/*         func          - fonction du thread (GThreadFunc)                                                                   */
+/*         data          - donnee passee a la fonction du thread                                                              */
+/* Sortie: valeur de retour du thread, NULL si erreur de creation                                                             */
+/******************************************************************************************************************************/
+ gpointer Run_thread_join ( const gchar *name, GThreadFunc func, gpointer data )
+  { if (!name) name = "New_thread";
+    GThread *thread = g_thread_new ( name, func, data );
+    if (!thread)
+     { Info( __func__, FACILITY_RUN, name, LOG_ERR, "g_thread_new failed for '%s'", name );
+       return(NULL);
+     }
+    Info( __func__, FACILITY_RUN, name, LOG_INFO, "Thread '%s' started, waiting for join", name );
+    gpointer retval = g_thread_join ( thread );
+    Info( __func__, FACILITY_RUN, name, LOG_INFO, "Thread '%s' joined", name );
+    return(retval);
+  }
+
 /*----------------------------------------------------------------------------------------------------------------------------*/
