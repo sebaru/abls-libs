@@ -37,6 +37,7 @@
  extern JsonNode  *Json_create                  ( void );
  extern void       Json_copy_member_into        ( JsonNode *SrcNode, const gchar *name, JsonNode *DestNode );
  extern void       Json_to_log                  ( gchar *log_facility, gchar *log_prefix, JsonNode *RootNode );
+ extern void       Json_ref                     ( JsonNode *RootNode );
  extern void       Json_unref                   ( JsonNode *RootNode );
 /*-- Construction d'objet JSON -----------------------------------------------------------------------------------------------*/
  extern void       Json_add_string              ( JsonNode *RootNode, gchar *name, const gchar *chaine );
