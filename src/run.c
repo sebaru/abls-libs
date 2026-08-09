@@ -36,10 +36,11 @@
 
 /******************************************************************************************************************************/
 /* Run_shell_real: Lance une commande via fork puis execvp                                                                    */
-/* Entree: commande_full - commande complete a executer (chaine null-terminee)                                                */
+/* Entree: commande_full       - commande complete a executer (chaine null-terminee)                                           */
+/*         wait_for_completion - TRUE pour attendre la fin du processus fils, FALSE pour lancer en arriere-plan               */
 /* Sortie: code de retour du processus fils, -1 si erreur interne, 128+signal si tue par signal                               */
 /******************************************************************************************************************************/
- static gint Run_shell_real ( const gchar *commande_full )
+ static gint Run_shell_real ( const gchar *commande_full, gboolean wait_for_completion )
   { if (!commande_full)
      { Info( __func__, FACILITY_RUN, NULL, LOG_WARNING, "Empty command refused" );
        return(-1);
@@ -70,7 +71,9 @@
 
     Info( __func__, FACILITY_RUN, NULL, LOG_INFO, "Forked pid %d for '%s'", pid, commande_full );             /* Dans le pere */
 
-    gint status;
+    if (!wait_for_completion) goto end;                                /* Si on ne veut pas attendre la fin du processus fils */
+
+    gint status = -1;
     while (waitpid(pid, &status, 0) < 0)
      { if (errno == EINTR) continue;
        Info( __func__, FACILITY_RUN, NULL, LOG_ERR, "waitpid failed for '%s': %s", commande_full, g_strerror(errno) );
@@ -103,7 +106,21 @@ end:
     va_start(ap, command);
     g_vsnprintf(commande_full, sizeof(commande_full), command, ap);
     va_end(ap);
-    return ( Run_shell_real(commande_full) );
+    return ( Run_shell_real(commande_full, TRUE) );
+  }
+/******************************************************************************************************************************/
+/* Run_shell_detached: Lance la commande en arriere-plan sans attendre sa terminaison                                         */
+/* Entree: command       - format de la commande (style printf)                                                               */
+/*         ...           - arguments variables pour le formatage                                                              */
+/* Sortie: neant                                                                                                              */
+/******************************************************************************************************************************/
+ void Run_shell_detached ( const gchar *command, ... )
+  { gchar commande_full[256];
+    va_list ap;
+    va_start(ap, command);
+    g_vsnprintf(commande_full, sizeof(commande_full), command, ap);
+    va_end(ap);
+    Run_shell_real(commande_full, FALSE);
   }
 /******************************************************************************************************************************/
 /* Run_thread_with_join: Lance un thread GLib et attend sa terminaison                                                        */
