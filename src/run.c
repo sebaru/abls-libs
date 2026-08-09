@@ -113,16 +113,37 @@ end:
 /* Sortie: valeur de retour du thread, NULL si erreur de creation                                                             */
 /******************************************************************************************************************************/
  gpointer Run_thread_with_join ( const gchar *name, GThreadFunc func, gpointer data )
-  { if (!name) name = "New_thread";
-    GThread *thread = g_thread_new ( name, func, data );
+  { if (!name) name = "New_joined_thread";
+    GError *error = NULL;
+    GThread *thread = g_thread_try_new ( name, func, data, &error );
     if (!thread)
-     { Info( __func__, FACILITY_RUN, name, LOG_ERR, "g_thread_new failed for '%s'", name );
+     { Info( __func__, FACILITY_RUN, name, LOG_ERR, "g_thread_try_new failed for '%s': %s", name, error ? error->message : "unknown error" );
+       if (error) g_error_free(error);
        return(NULL);
      }
     Info( __func__, FACILITY_RUN, name, LOG_INFO, "Thread '%s' started, waiting for join", name );
     gpointer retval = g_thread_join ( thread );
     Info( __func__, FACILITY_RUN, name, LOG_INFO, "Thread '%s' joined", name );
     return(retval);
+  }
+/******************************************************************************************************************************/
+/* Run_thread_detached: Lance un thread GLib en mode detache                                                                  */
+/* Entree: name          - nom du thread (peut etre NULL)                                                                     */
+/*         func          - fonction du thread (GThreadFunc)                                                                   */
+/*         data          - donnee passee a la fonction du thread                                                              */
+/* Sortie: TRUE si OK                                                                                                         */
+/******************************************************************************************************************************/
+ gboolean Run_thread_detached ( const gchar *name, GThreadFunc func, gpointer data )
+  { if (!name) name = "New_detached_thread";
+    GError *error = NULL;
+    GThread *thread = g_thread_try_new ( name, func, data, &error );
+    if (!thread)
+     { Info( __func__, FACILITY_RUN, name, LOG_ERR, "g_thread_try_new failed for '%s': %s", name, error ? error->message : "unknown error" );
+       if (error) g_error_free(error);
+       return(FALSE);
+     }
+    Info( __func__, FACILITY_RUN, name, LOG_INFO, "Thread '%s' started (detached)", name );
+    return(TRUE);
   }
 /******************************************************************************************************************************/
 /* Run_thread_pool_init: Initialise un pool de threads GLib                                                                   */
