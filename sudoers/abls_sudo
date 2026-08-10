@@ -9,11 +9,11 @@
 %abls ALL=(ALL) NOPASSWD: /usr/bin/apt ^upgrade -y abls-[a-z0-9-]+$
 %abls ALL=(ALL) NOPASSWD: /usr/sbin/dnf ^install -y abls-[a-z0-9-]+$
 %abls ALL=(ALL) NOPASSWD: /usr/sbin/dnf ^upgrade -y abls-[a-z0-9-]+$
-%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl ^stop abls-[a-z0-9-@]+$
-%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl ^start abls-[a-z0-9-@]+$
-%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl ^restart abls-[a-z0-9-@]+$
-%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl ^enable abls-[a-z0-9-@]+$
-%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl ^disable abls-[a-z0-9-@]+$
+%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl ^stop abls-[a-z0-9@.-]+$
+%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl ^start abls-[a-z0-9@.-]+$
+%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl ^restart abls-[a-z0-9@.-]+$
+%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl ^enable abls-[a-z0-9@.-]+$
+%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl ^disable abls-[a-z0-9@.-]+$
 
 
 Defaults:%abls !requiretty

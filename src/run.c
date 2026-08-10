@@ -55,7 +55,7 @@
        return(-1);
      }
 
-    Info( __func__, FACILITY_RUN, NULL, LOG_NOTICE, "Running command: %s", commande_full );
+    Info( __func__, FACILITY_RUN, NULL, LOG_INFO, "Running command: %s", commande_full );
 
     pid_t pid = fork();
     if (pid < 0)                                                                                         /* Si erreur de fork */
