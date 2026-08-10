@@ -5,15 +5,15 @@
 %abls  ALL=(ALL) NOPASSWD: /usr/sbin/poweroff
 %abls  ALL=(ALL) NOPASSWD: /usr/sbin/reboot
 ## Command for Agents
-%abls ALL=(ALL) NOPASSWD: /usr/bin/apt ^install -y abls-[a-z0-9-]+$
-%abls ALL=(ALL) NOPASSWD: /usr/bin/apt ^upgrade -y abls-[a-z0-9-]+$
-%abls ALL=(ALL) NOPASSWD: /usr/sbin/dnf ^install -y abls-[a-z0-9-]+$
-%abls ALL=(ALL) NOPASSWD: /usr/sbin/dnf ^upgrade -y abls-[a-z0-9-]+$
-%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl ^stop abls-[a-z0-9@.-]+$
-%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl ^start abls-[a-z0-9@.-]+$
-%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl ^restart abls-[a-z0-9@.-]+$
-%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl ^enable abls-[a-z0-9@.-]+$
-%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl ^disable abls-[a-z0-9@.-]+$
+%abls ALL=(ALL) NOPASSWD: /usr/bin/apt ^install -y abls-[A-Za-z0-9-]+$
+%abls ALL=(ALL) NOPASSWD: /usr/bin/apt ^upgrade -y abls-[A-Za-z0-9-]+$
+%abls ALL=(ALL) NOPASSWD: /usr/sbin/dnf ^install -y abls-[A-Za-z0-9-]+$
+%abls ALL=(ALL) NOPASSWD: /usr/sbin/dnf ^upgrade -y abls-[A-Za-z0-9-]+$
+%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl ^stop abls-[A-Za-z0-9@.-]+$
+%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl ^start abls-[A-Za-z0-9@.-]+$
+%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl ^restart abls-[A-Za-z0-9@.-]+$
+%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl ^enable abls-[A-Za-z0-9@.-]+$
+%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl ^disable abls-[A-Za-z0-9@.-]+$
 
 
 Defaults:%abls !requiretty
