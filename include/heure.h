@@ -31,7 +31,7 @@
  #include <glib.h>
  #include <time.h>
 
-/*-- Structure d'état pour Heure_at_sec et Heure_at_min ----------------------------------------------------------------------*/
+/*-- Structure d'état pour les déclenchements temporels ----------------------------------------------------------------------*/
 /*   A déclarer par l'appelant et initialisée à zéro (ex : ABLS_HEURE ctx = {};)                                              */
  typedef struct
   { time_t last_triggered;                                     /* horodatage (secondes depuis epoch) du dernier déclenchement */
@@ -42,6 +42,24 @@
 
 /*-- Déclenchement ponctuel à une minute précise -----------------------------------------------------------------------------*/
  extern gboolean Heure_at_min ( ABLS_HEURE *ctx, gint heure, gint minute );
+
+/*-- Déclenchement à chaque changement de minute (heure:minute:00) -----------------------------------------------------------*/
+ extern gboolean Heure_every_min ( ABLS_HEURE *ctx );
+
+/*-- Déclenchement toutes les 5 minutes pleines (heure:00:00, heure:05:00, ...) ---------------------------------------------*/
+ extern gboolean Heure_every_5_min ( ABLS_HEURE *ctx );
+
+/*-- Déclenchement toutes les 15 minutes pleines (heure:00:00, heure:15:00, ...) --------------------------------------------*/
+ extern gboolean Heure_every_15_min ( ABLS_HEURE *ctx );
+
+/*-- Déclenchement à chaque heure pleine (heure:00:00) -----------------------------------------------------------------------*/
+ extern gboolean Heure_every_hour ( ABLS_HEURE *ctx );
+
+/*-- Déclenchement toutes les 2 heures pleines -------------------------------------------------------------------------------*/
+ extern gboolean Heure_every_2_hours ( ABLS_HEURE *ctx );
+
+/*-- Déclenchement unique en fin de journée (23:59:59) -----------------------------------------------------------------------*/
+ extern gboolean Heure_every_end_of_day ( ABLS_HEURE *ctx );
 
 #endif /* _ABLS_HEURE_H_ */
 /*----------------------------------------------------------------------------------------------------------------------------*/

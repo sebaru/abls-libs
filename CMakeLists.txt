@@ -49,7 +49,7 @@ add_library(abls-libs SHARED
   src/mqtt.c
   src/config.c
   src/heure.c
-  src/fork.c
+  src/run.c
   src/string.c
   src/uuid.c
 )
@@ -57,7 +57,7 @@ add_library(abls-libs SHARED
 set_target_properties(abls-libs PROPERTIES
   VERSION   ${PROJECT_VERSION}
   SOVERSION ${PROJECT_VERSION_MAJOR}
-  PUBLIC_HEADER "include/info.h;include/json.h;include/mqtt.h;include/config.h;include/heure.h;include/fork.h;include/string.h;include/uuid.h;include/abls-libs.h"
+  PUBLIC_HEADER "include/info.h;include/json.h;include/mqtt.h;include/config.h;include/heure.h;include/run.h;include/string.h;include/uuid.h;include/abls-libs.h"
 )
 
 target_include_directories(abls-libs
@@ -140,12 +140,11 @@ set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION "/etc;/etc/sudoers.d")
 set(CPACK_RPM_RUNTIME_PACKAGE_NAME    "abls-libs")
 set(CPACK_RPM_RUNTIME_PACKAGE_SUMMARY "Abls-Habitat shared library (runtime)")
 set(CPACK_RPM_RUNTIME_PACKAGE_REQUIRES "glib2, json-glib")
-set(CPACK_RPM_RUNTIME_POST_INSTALL_SCRIPT_FILE "" )
 set(CPACK_RPM_RUNTIME_POST_SCRIPTLET  "/sbin/ldconfig")
 set(CPACK_RPM_RUNTIME_FILE_NAME "RPM-DEFAULT")
 set(CPACK_RPM_RUNTIME_DEBUGINFO_PACKAGE ON)
 set(CPACK_RPM_RUNTIME_DEBUGINFO_FILE_NAME "RPM-DEFAULT")
-set(CPACK_RPM_RUNTIME_BUILD_SOURCE_DIRS_PREFIX "/usr/src/debug")
+set(CPACK_RPM_RUNTIME_BUILD_SOURCE_DIRS_PREFIX "/usr/src/abls/libs")
 
 # Package devel
 set(CPACK_RPM_DEVEL_PACKAGE_NAME    "abls-libs-devel")
