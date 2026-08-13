@@ -22,7 +22,7 @@ Behavior:
   - Creates main from trunk if missing, then merges trunk into main
   - Pushes main and tag to origin
   - Copies produced RPMs from ABLS-LIBS/build to ABLS-PKGS/public/rpms/<arch>
-  - Copies produced DEBs from ABLS-LIBS/build/deb/<suite>/<arch> to ABLS-PKGS/deb-packages/<suite>/
+  - Copies produced DEBs from ABLS-LIBS/build/deb/<suite>/<arch> to ABLS-PKGS/deb-packages/<suite>/<arch>/
 
 Environment:
   - ABLS_PKGS_REPO_DIR: optional destination override for copied packages
@@ -182,16 +182,18 @@ copy_built_packages_to_abls_pkgs_repo() {
 
   local deb_root="$build_dir/deb"
   if [[ -d "$deb_root" ]]; then
-    local suite_dir suite_name deb_target_dir
+    local suite_dir suite_name
     for suite_dir in "$deb_root"/*; do
       [[ -d "$suite_dir" ]] || continue
       suite_name="$(basename "$suite_dir")"
-      deb_target_dir="$target_repo_root/deb-packages/$suite_name"
-      run_cmd "mkdir -p '$deb_target_dir'"
 
       local arch_dir deb_file
       for arch_dir in "$suite_dir"/*; do
         [[ -d "$arch_dir" ]] || continue
+        local arch_name deb_target_dir
+        arch_name="$(basename "$arch_dir")"
+        deb_target_dir="$target_repo_root/deb-packages/$suite_name/$arch_name"
+        run_cmd "mkdir -p '$deb_target_dir'"
         shopt -s nullglob
         for deb_file in "$arch_dir"/*.deb; do
           found_deb=true
@@ -259,7 +261,7 @@ run_cmd "git tag -a $release_tag -m 'TAG: Create tag $release_tag.'"
 run_cmd "./build.sh"
 run_cmd "./build_rpm.sh"
 for deb_suite in $DEB_SUITES; do
-  run_cmd "./build_apt.sh --dist $deb_suite --no-sign"
+  run_cmd "./build_apt.sh --dist $deb_suite"
 done
 
 # Ensure main exists locally/remotely.

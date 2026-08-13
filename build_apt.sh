@@ -3,10 +3,10 @@
 set -euo pipefail
 
 PACKAGE_ONLY=false
-NO_SIGN=false
 CLEAN=false
 TARGET_DIST="bookworm"
 TARGET_ARCH=""
+ALL_ARCHES=("amd64" "arm64" "armhf")
 DEB_VERSION_SUFFIX=""
 USE_DIST_SUFFIX=true
 
@@ -16,18 +16,17 @@ Usage: ./build_apt.sh [options]
 
 Options:
   --package-only, -p   Skip compilation and only run cpack
-  --no-sign            Skip package signing
   --clean              Remove old .deb artifacts before build
   --dist <suite>       Target suite label for output path (default: bookworm)
-  --arch <arch>        Target Debian arch (default: host arch)
+  --arch <arch>        Target Debian arch (default: build all: amd64 arm64 armhf)
   --version-suffix <s> Debian version suffix override (example: ~trixie)
   --no-dist-suffix     Disable automatic ~<dist> suffix
   -h, --help           Show this help
 
 Notes:
-- This script uses native build toolchain by default.
+- This script builds all supported Debian architectures when --arch is omitted.
 - --dist is used for output path and default Debian version suffix (~<dist>).
-- To sign packages, export DEB_SIGNER_ID and install dpkg-sig.
+- Package signing is centralized in ABLS-PKGS.
 EOF
 }
 
@@ -35,10 +34,6 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --package-only|-p)
       PACKAGE_ONLY=true
-      shift
-      ;;
-    --no-sign)
-      NO_SIGN=true
       shift
       ;;
     --clean)
@@ -79,26 +74,67 @@ PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="$PROJECT_DIR/build"
 
 if [[ -z "$TARGET_ARCH" ]]; then
-  if command -v dpkg >/dev/null 2>&1; then
-    TARGET_ARCH="$(dpkg --print-architecture)"
-  else
-    echo "Error: dpkg not found. Install Debian packaging tools first."
-    exit 1
-  fi
-fi
+  overall_status=0
+  for arch in "${ALL_ARCHES[@]}"; do
+    arch_cmd=("$0" "--dist" "$TARGET_DIST" "--arch" "$arch")
+    [[ "$PACKAGE_ONLY" == "true" ]] && arch_cmd+=("--package-only")
+    [[ "$CLEAN" == "true" ]] && arch_cmd+=("--clean")
+    [[ "$USE_DIST_SUFFIX" == "false" ]] && arch_cmd+=("--no-dist-suffix")
+    if [[ -n "$DEB_VERSION_SUFFIX" ]]; then
+      arch_cmd+=("--version-suffix" "$DEB_VERSION_SUFFIX")
+    fi
 
-ARTIFACT_DIR="$BUILD_DIR/deb/$TARGET_DIST/$TARGET_ARCH"
+    if ! "${arch_cmd[@]}"; then
+      overall_status=1
+    fi
+  done
+  exit "$overall_status"
+fi
 
 if [[ -z "$DEB_VERSION_SUFFIX" && "$USE_DIST_SUFFIX" == "true" ]]; then
   DEB_VERSION_SUFFIX="~$TARGET_DIST"
 fi
+
+BUILD_DIR="$PROJECT_DIR/build/$TARGET_DIST/$TARGET_ARCH"
+ARTIFACT_DIR="$PROJECT_DIR/build/deb/$TARGET_DIST/$TARGET_ARCH"
+
+cmake_args=(
+  -DCMAKE_INSTALL_PREFIX=/usr
+  -DCPACK_DEBIAN_PACKAGE_ARCHITECTURE="$TARGET_ARCH"
+  -DABLS_DEB_VERSION_SUFFIX="$DEB_VERSION_SUFFIX"
+)
+
+case "$TARGET_ARCH" in
+  amd64)
+    ;;
+  arm64)
+    arm64_cc="${ABLS_ARM64_CC:-aarch64-linux-gnu-gcc}"
+    if ! command -v "$arm64_cc" >/dev/null 2>&1; then
+      echo "Error: missing cross compiler: $arm64_cc" >&2
+      exit 1
+    fi
+    cmake_args+=(-DCMAKE_C_COMPILER="$arm64_cc")
+    ;;
+  armhf)
+    armhf_cc="${ABLS_ARMHF_CC:-arm-linux-gnueabihf-gcc}"
+    if ! command -v "$armhf_cc" >/dev/null 2>&1; then
+      echo "Error: missing cross compiler: $armhf_cc" >&2
+      exit 1
+    fi
+    cmake_args+=(-DCMAKE_C_COMPILER="$armhf_cc")
+    ;;
+  *)
+    echo "Error: unsupported Debian arch: $TARGET_ARCH" >&2
+    exit 1
+    ;;
+esac
 
 echo "Building DEB packages for abls-libs..."
 echo "Project directory: $PROJECT_DIR"
 echo "Build directory:   $BUILD_DIR"
 echo "Output directory:  $ARTIFACT_DIR"
 echo "Package-only mode: $PACKAGE_ONLY"
-echo "Signing mode:      $([[ "$NO_SIGN" == "true" ]] && echo disabled || echo enabled)"
+echo "Signing mode:      disabled (centralized in ABLS-PKGS)"
 echo "Target suite:      $TARGET_DIST"
 echo "Target arch:       $TARGET_ARCH"
 echo "Version suffix:    ${DEB_VERSION_SUFFIX:-<none>}"
@@ -111,10 +147,7 @@ if [[ "$CLEAN" == "true" ]]; then
   rm -f "$ARTIFACT_DIR"/abls-libs_*_*.deb "$ARTIFACT_DIR"/abls-libs-dev_*_*.deb
 fi
 
-cmake -S "$PROJECT_DIR" -B "$BUILD_DIR" \
-  -DCMAKE_INSTALL_PREFIX=/usr \
-  -DCPACK_DEBIAN_PACKAGE_ARCHITECTURE="$TARGET_ARCH" \
-  -DABLS_DEB_VERSION_SUFFIX="$DEB_VERSION_SUFFIX"
+cmake -S "$PROJECT_DIR" -B "$BUILD_DIR" "${cmake_args[@]}"
 
 if [[ "$PACKAGE_ONLY" == "false" ]]; then
   cmake --build "$BUILD_DIR" -- -j"$(nproc)"
@@ -158,19 +191,6 @@ done < <(find "$BUILD_DIR" -maxdepth 1 -type f -name '*.deb' -printf '%T@ %p\n' 
 if [[ -z "$runtime_deb" || -z "$devel_deb" ]]; then
   echo "DEB generation failed: expected runtime and dev packages in $BUILD_DIR"
   exit 1
-fi
-
-if [[ "$NO_SIGN" == "false" ]]; then
-  if command -v dpkg-sig >/dev/null 2>&1; then
-    if [[ -z "${DEB_SIGNER_ID:-}" ]]; then
-      echo "Error: DEB_SIGNER_ID is required for signing"
-      exit 1
-    fi
-    dpkg-sig --sign builder -k "$DEB_SIGNER_ID" "$runtime_deb" "$devel_deb"
-  else
-    echo "Error: dpkg-sig command not found but signing is enabled"
-    exit 1
-  fi
 fi
 
 copy_with_normalized_name() {
