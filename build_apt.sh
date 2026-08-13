@@ -6,7 +6,6 @@ PACKAGE_ONLY=false
 CLEAN=false
 TARGET_DIST="bookworm"
 TARGET_ARCH=""
-ALL_ARCHES=("amd64" "arm64" "armhf")
 DEB_VERSION_SUFFIX=""
 USE_DIST_SUFFIX=true
 
@@ -18,13 +17,12 @@ Options:
   --package-only, -p   Skip compilation and only run cpack
   --clean              Remove old .deb artifacts before build
   --dist <suite>       Target suite label for output path (default: bookworm)
-  --arch <arch>        Target Debian arch (default: build all: amd64 arm64 armhf)
   --version-suffix <s> Debian version suffix override (example: ~trixie)
   --no-dist-suffix     Disable automatic ~<dist> suffix
   -h, --help           Show this help
 
 Notes:
-- This script builds all supported Debian architectures when --arch is omitted.
+- This script builds only the native host architecture.
 - --dist is used for output path and default Debian version suffix (~<dist>).
 - Package signing is centralized in ABLS-PKGS.
 EOF
@@ -43,11 +41,6 @@ while [[ $# -gt 0 ]]; do
     --dist)
       TARGET_DIST="${2:-}"
       [[ -n "$TARGET_DIST" ]] || { echo "Missing value for --dist"; exit 2; }
-      shift 2
-      ;;
-    --arch)
-      TARGET_ARCH="${2:-}"
-      [[ -n "$TARGET_ARCH" ]] || { echo "Missing value for --arch"; exit 2; }
       shift 2
       ;;
     --version-suffix)
@@ -73,23 +66,12 @@ done
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="$PROJECT_DIR/build"
 
-if [[ -z "$TARGET_ARCH" ]]; then
-  overall_status=0
-  for arch in "${ALL_ARCHES[@]}"; do
-    arch_cmd=("$0" "--dist" "$TARGET_DIST" "--arch" "$arch")
-    [[ "$PACKAGE_ONLY" == "true" ]] && arch_cmd+=("--package-only")
-    [[ "$CLEAN" == "true" ]] && arch_cmd+=("--clean")
-    [[ "$USE_DIST_SUFFIX" == "false" ]] && arch_cmd+=("--no-dist-suffix")
-    if [[ -n "$DEB_VERSION_SUFFIX" ]]; then
-      arch_cmd+=("--version-suffix" "$DEB_VERSION_SUFFIX")
-    fi
-
-    if ! "${arch_cmd[@]}"; then
-      overall_status=1
-    fi
-  done
-  exit "$overall_status"
+if ! command -v dpkg >/dev/null 2>&1; then
+  echo "Error: dpkg not found. Install Debian packaging tools first."
+  exit 1
 fi
+
+TARGET_ARCH="$(dpkg --print-architecture)"
 
 if [[ -z "$DEB_VERSION_SUFFIX" && "$USE_DIST_SUFFIX" == "true" ]]; then
   DEB_VERSION_SUFFIX="~$TARGET_DIST"
@@ -103,31 +85,6 @@ cmake_args=(
   -DCPACK_DEBIAN_PACKAGE_ARCHITECTURE="$TARGET_ARCH"
   -DABLS_DEB_VERSION_SUFFIX="$DEB_VERSION_SUFFIX"
 )
-
-case "$TARGET_ARCH" in
-  amd64)
-    ;;
-  arm64)
-    arm64_cc="${ABLS_ARM64_CC:-aarch64-linux-gnu-gcc}"
-    if ! command -v "$arm64_cc" >/dev/null 2>&1; then
-      echo "Error: missing cross compiler: $arm64_cc" >&2
-      exit 1
-    fi
-    cmake_args+=(-DCMAKE_C_COMPILER="$arm64_cc")
-    ;;
-  armhf)
-    armhf_cc="${ABLS_ARMHF_CC:-arm-linux-gnueabihf-gcc}"
-    if ! command -v "$armhf_cc" >/dev/null 2>&1; then
-      echo "Error: missing cross compiler: $armhf_cc" >&2
-      exit 1
-    fi
-    cmake_args+=(-DCMAKE_C_COMPILER="$armhf_cc")
-    ;;
-  *)
-    echo "Error: unsupported Debian arch: $TARGET_ARCH" >&2
-    exit 1
-    ;;
-esac
 
 echo "Building DEB packages for abls-libs..."
 echo "Project directory: $PROJECT_DIR"
@@ -213,6 +170,39 @@ copy_with_normalized_name() {
 
 copy_with_normalized_name "$runtime_deb" "$ARTIFACT_DIR"
 copy_with_normalized_name "$devel_deb" "$ARTIFACT_DIR"
+
+publish_to_abls_pkgs_repo() {
+  local target_repo_root="${ABLS_PKGS_REPO_DIR:-$PROJECT_DIR/../ABLS-PKGS}"
+  local resolved_repo_root=""
+
+  if [[ -d "$target_repo_root/public" ]]; then
+    resolved_repo_root="$target_repo_root"
+  elif [[ "$(basename "$target_repo_root")" == "public" ]]; then
+    resolved_repo_root="$(cd "$target_repo_root/.." && pwd)"
+  else
+    resolved_repo_root="$target_repo_root"
+  fi
+
+  if [[ ! -d "$resolved_repo_root" ]]; then
+    echo "WARN: ABLS-PKGS repo not found at $resolved_repo_root; skipping publish"
+    return 0
+  fi
+
+  local publish_dir="$resolved_repo_root/deb-packages/$TARGET_DIST/$TARGET_ARCH"
+  mkdir -p "$publish_dir"
+
+  shopt -s nullglob
+  local deb_file
+  for deb_file in "$ARTIFACT_DIR"/*.deb; do
+    cp -f "$deb_file" "$publish_dir/"
+  done
+  shopt -u nullglob
+
+  echo "Published to:"
+  echo "  $publish_dir"
+}
+
+publish_to_abls_pkgs_repo
 
 echo "DEBs generated:"
 echo "  $runtime_deb"

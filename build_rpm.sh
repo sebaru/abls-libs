@@ -61,6 +61,41 @@ if [[ -z "$debuginfo_rpm" ]]; then
   exit 1
 fi
 
+publish_to_abls_pkgs_repo() {
+  local target_repo_root="${ABLS_PKGS_REPO_DIR:-$PROJECT_DIR/../ABLS-PKGS}"
+  local resolved_public_dir=""
+
+  if [[ -d "$target_repo_root/public" ]]; then
+    resolved_public_dir="$target_repo_root/public"
+  elif [[ -d "$target_repo_root/rpms" || "$(basename "$target_repo_root")" == "public" ]]; then
+    resolved_public_dir="$target_repo_root"
+  else
+    resolved_public_dir="$target_repo_root/public"
+  fi
+
+  if [[ ! -d "$resolved_public_dir" ]]; then
+    echo "WARN: ABLS-PKGS repo not found at $resolved_public_dir; skipping publish"
+    return 0
+  fi
+
+  shopt -s nullglob
+  local rpm_file
+  for rpm_file in "$BUILD_DIR"/*.rpm; do
+    local arch target_dir
+    arch="$(rpm -qp --qf '%{ARCH}' "$rpm_file" 2>/dev/null || true)"
+    target_dir="$resolved_public_dir/rpms"
+    [[ -n "$arch" ]] && target_dir="$target_dir/$arch"
+    mkdir -p "$target_dir"
+    cp -f "$rpm_file" "$target_dir/"
+  done
+  shopt -u nullglob
+
+  echo "Published to:"
+  echo "  $resolved_public_dir/rpms"
+}
+
+publish_to_abls_pkgs_repo
+
 echo "RPMs generated:"
 echo "  $runtime_rpm"
 echo "  $devel_rpm"
