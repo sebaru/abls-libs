@@ -4,10 +4,27 @@ set -euo pipefail
 
 PACKAGE_ONLY=false
 CLEAN=false
-TARGET_DIST="bookworm"
+TARGET_DIST=""
 TARGET_ARCH=""
 DEB_VERSION_SUFFIX=""
 USE_DIST_SUFFIX=true
+
+detect_host_dist() {
+  local codename=""
+
+  if [[ -r /etc/os-release ]]; then
+    # shellcheck disable=SC1091
+    . /etc/os-release
+    codename="${VERSION_CODENAME:-${DEBIAN_CODENAME:-}}"
+  fi
+
+  if [[ -n "$codename" ]]; then
+    printf '%s\n' "$codename"
+    return 0
+  fi
+
+  printf '%s\n' "bookworm"
+}
 
 usage() {
   cat <<'EOF'
@@ -16,13 +33,14 @@ Usage: ./build_apt.sh [options]
 Options:
   --package-only, -p   Skip compilation and only run cpack
   --clean              Remove old .deb artifacts before build
-  --dist <suite>       Target suite label for output path (default: bookworm)
+  --dist <suite>       Target suite label for output path (default: host OS codename)
   --version-suffix <s> Debian version suffix override (example: ~trixie)
   --no-dist-suffix     Disable automatic ~<dist> suffix
   -h, --help           Show this help
 
 Notes:
 - This script builds only the native host architecture.
+- By default, suite is inferred from /etc/os-release (VERSION_CODENAME/DEBIAN_CODENAME).
 - --dist is used for output path and default Debian version suffix (~<dist>).
 - Package signing is centralized in ABLS-PKGS.
 EOF
@@ -72,6 +90,10 @@ if ! command -v dpkg >/dev/null 2>&1; then
 fi
 
 TARGET_ARCH="$(dpkg --print-architecture)"
+
+if [[ -z "$TARGET_DIST" ]]; then
+  TARGET_DIST="$(detect_host_dist)"
+fi
 
 if [[ -z "$DEB_VERSION_SUFFIX" && "$USE_DIST_SUFFIX" == "true" ]]; then
   DEB_VERSION_SUFFIX="~$TARGET_DIST"
