@@ -205,11 +205,11 @@
  gboolean Top_is_out ( time_t target_time )
   { return ( target_time <= time(NULL)); }
 /******************************************************************************************************************************/
-/* Top_time_remaining: Renvoie le temps restant avant le prochain top                                                         */
+/* Top_until: Renvoie le temps restant avant le prochain top                                                                  */
 /* Entree: target_time - timestamp du prochain top                                                                            */
 /* Sortie: temps restant avant le prochain top en secondes ; 0 si le top est déjà dépassé                                     */
 /******************************************************************************************************************************/
- guint Top_time_remaining ( time_t target_time )
+ guint Top_until ( time_t target_time )
   { time_t now = time(NULL);
     return ( target_time > now ? target_time - now : 0 );
   }

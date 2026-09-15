@@ -64,7 +64,7 @@
 /*-- Gestion des next top ----------------------------------------------------------------------------------------------------*/
  extern time_t   Top_set_next_in ( guint target_time );
  extern gboolean Top_is_out ( time_t target_time );
- extern guint    Top_time_remaining ( time_t target_time );
+ extern guint    Top_until ( time_t target_time );
 
 /*-- Gestion des last top ----------------------------------------------------------------------------------------------------*/
  extern time_t   Top_set_now ( void );
