@@ -191,42 +191,50 @@
     return (TRUE);
   }
 /******************************************************************************************************************************/
-/* Heure_next_top_set: Renvoie le timestamp du prochain top à partir de maintenant                                            */
+/* Top_set_next_in: Renvoie le timestamp du prochain top à partir de maintenant                                               */
 /* Entree: ctx - pointeur vers la structure d'état de l'appelant (doit être initialisée à zéro au départ)                     */
 /* Sortie: timestamp du prochain top à partir de maintenant                                                                   */
 /******************************************************************************************************************************/
- time_t Heure_next_top_set ( guint target_time )
+ time_t Top_set_next_in ( guint target_time )
   { return (time(NULL) + target_time); }
 /******************************************************************************************************************************/
-/* Heure_next_top_is_out: Vérifie si le prochain top est dépassé                                                              */
+/* Top_is_out: Vérifie si le prochain top est dépassé                                                                         */
 /* Entree: target_time - timestamp du prochain top                                                                            */
 /* Sortie: TRUE si le prochain top est dépassé ; FALSE sinon                                                                  */
 /******************************************************************************************************************************/
- gboolean Heure_next_top_is_out ( time_t target_time )
+ gboolean Top_is_out ( time_t target_time )
   { return ( target_time <= time(NULL)); }
 /******************************************************************************************************************************/
-/* Heure_next_top_remaining: Renvoie le temps restant avant le prochain top                                                   */
+/* Top_time_remaining: Renvoie le temps restant avant le prochain top                                                         */
 /* Entree: target_time - timestamp du prochain top                                                                            */
 /* Sortie: temps restant avant le prochain top en secondes ; 0 si le top est déjà dépassé                                     */
 /******************************************************************************************************************************/
- guint Heure_next_top_remaining ( time_t target_time )
+ guint Top_time_remaining ( time_t target_time )
   { time_t now = time(NULL);
     return ( target_time > now ? target_time - now : 0 );
   }
 /******************************************************************************************************************************/
-/* Heure_last_top_set_now: Renvoie le timestamp du dernier top à partir de maintenant                                         */
+/* Top_set_now: Renvoie le timestamp du dernier top à partir de maintenant                                                    */
 /* Entree: ctx - pointeur vers la structure d'état de l'appelant (doit être initialisée à zéro au départ)                     */
 /* Sortie: timestamp du dernier top à partir de maintenant                                                                    */
 /******************************************************************************************************************************/
- time_t Heure_last_top_set_now ( void )
+ time_t Top_set_now ( void )
   { return (time(NULL)); }
-  /******************************************************************************************************************************/
-/* Heure_last_top_set_now: Renvoie le timestamp du dernier top à partir de maintenant                                         */
-/* Entree: ctx - pointeur vers la structure d'état de l'appelant (doit être initialisée à zéro au départ)                     */
-/* Sortie: timestamp du dernier top à partir de maintenant                                                                    */
 /******************************************************************************************************************************/
- guint Heure_last_top_since ( time_t reference_time )
+/* Top_since: Renvoie le temps écoulé depuis le dernier top                                                                   */
+/* Entree: reference_time - timestamp du dernier top                                                                          */
+/* Sortie: temps écoulé depuis le dernier top en secondes ; 0 si le top est dans le futur                                     */
+/******************************************************************************************************************************/
+ guint Top_since ( time_t reference_time )
   { time_t now = time(NULL);
     return ( reference_time <= now ? now - reference_time : 0 );
   }
+/******************************************************************************************************************************/
+/* Top_is_too_old: Vérifie si le dernier top est trop ancien par rapport à l'âge spécifié                                     */
+/* Entree: reference_time - timestamp du dernier top                                                                          */
+/*         age - âge maximal autorisé                                                                                         */
+/* Sortie: TRUE si le dernier top est trop ancien, FALSE sinon                                                                */
+/******************************************************************************************************************************/
+ gboolean Top_is_too_old ( time_t reference_time, guint age )
+  { return ( reference_time + age <= time(NULL) ); }
 /*----------------------------------------------------------------------------------------------------------------------------*/
