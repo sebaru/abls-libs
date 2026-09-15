@@ -62,13 +62,14 @@
  extern gboolean Heure_every_end_of_day ( struct ABLS_HEURE *ctx );
 
 /*-- Gestion des next top ----------------------------------------------------------------------------------------------------*/
- extern time_t   Heure_next_top_set ( guint target_time );
- extern gboolean Heure_next_top_is_out ( time_t target_time );
- extern guint    Heure_next_top_remaining ( time_t target_time );
+ extern time_t   Top_set_next_in ( guint target_time );
+ extern gboolean Top_is_out ( time_t target_time );
+ extern guint    Top_remaining ( time_t target_time );
 
 /*-- Gestion des last top ----------------------------------------------------------------------------------------------------*/
- extern time_t Heure_last_top_set_now ( void );
- extern guint  Heure_last_top_since ( time_t reference_time );
+ extern time_t   Top_set_now ( void );
+ extern guint    Top_since ( time_t reference_time );
+ extern gboolean Top_is_too_old ( time_t reference_time, guint age );
 
 #endif /* _ABLS_HEURE_H_ */
 /*----------------------------------------------------------------------------------------------------------------------------*/
