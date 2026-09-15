@@ -35,7 +35,7 @@
 /*         seconde - seconde souhaitée (0-59)                                                                                 */
 /* Sortie: TRUE lors du premier appel correspondant à la seconde visée ; FALSE le reste du temps                              */
 /******************************************************************************************************************************/
- gboolean Heure_at_sec ( ABLS_HEURE *ctx, gint heure, gint minute, gint seconde )
+ gboolean Heure_at_sec ( struct ABLS_HEURE *ctx, gint heure, gint minute, gint seconde )
   { struct tm tm_now;
     time_t now;
 
@@ -56,7 +56,7 @@
 /*         minute - minute souhaitée (0-59)                                                                                   */
 /* Sortie: TRUE lors du premier appel correspondant à la minute visée ; FALSE le reste du temps                               */
 /******************************************************************************************************************************/
- gboolean Heure_at_min ( ABLS_HEURE *ctx, gint heure, gint minute )
+ gboolean Heure_at_min ( struct ABLS_HEURE *ctx, gint heure, gint minute )
   { struct tm tm_now;
     time_t now, minute_start;
 
@@ -76,7 +76,7 @@
 /* Entree: ctx - pointeur vers la structure d'état de l'appelant (doit être initialisée à zéro au départ)                     */
 /* Sortie: TRUE lors du premier appel correspondant à l'instant heure:minute:00 ; FALSE le reste du temps                     */
 /******************************************************************************************************************************/
- gboolean Heure_every_min ( ABLS_HEURE *ctx )
+ gboolean Heure_every_min ( struct ABLS_HEURE *ctx )
   { struct tm tm_now;
     time_t now, minute_start;
 
@@ -96,7 +96,7 @@
 /* Entree: ctx - pointeur vers la structure d'état de l'appelant (doit être initialisée à zéro au départ)                   */
 /* Sortie: TRUE lors du premier appel correspondant à l'instant heure:00|05|10...:00 ; FALSE le reste du temps              */
 /******************************************************************************************************************************/
- gboolean Heure_every_5_min ( ABLS_HEURE *ctx )
+ gboolean Heure_every_5_min ( struct ABLS_HEURE *ctx )
   { struct tm tm_now;
     time_t now, minute_start;
 
@@ -116,7 +116,7 @@
 /* Entree: ctx - pointeur vers la structure d'état de l'appelant (doit être initialisée à zéro au départ)                   */
 /* Sortie: TRUE lors du premier appel correspondant à l'instant heure:00|15|30|45:00 ; FALSE le reste du temps              */
 /******************************************************************************************************************************/
- gboolean Heure_every_15_min ( ABLS_HEURE *ctx )
+ gboolean Heure_every_15_min ( struct ABLS_HEURE *ctx )
   { struct tm tm_now;
     time_t now, minute_start;
 
@@ -136,7 +136,7 @@
 /* Entree: ctx - pointeur vers la structure d'état de l'appelant (doit être initialisée à zéro au départ)                     */
 /* Sortie: TRUE lors du premier appel correspondant à l'instant heure:00:00 ; FALSE le reste du temps                         */
 /******************************************************************************************************************************/
- gboolean Heure_every_hour ( ABLS_HEURE *ctx )
+ gboolean Heure_every_hour ( struct ABLS_HEURE *ctx )
   { struct tm tm_now;
     time_t now, hour_start;
 
@@ -156,7 +156,7 @@
 /* Entree: ctx - pointeur vers la structure d'état de l'appelant (doit être initialisée à zéro au départ)                     */
 /* Sortie: TRUE lors du premier appel correspondant à l'instant heure paire:00:00 ; FALSE le reste du temps                   */
 /******************************************************************************************************************************/
- gboolean Heure_every_2_hours ( ABLS_HEURE *ctx )
+ gboolean Heure_every_2_hours ( struct ABLS_HEURE *ctx )
   { struct tm tm_now;
     time_t now, hour_start;
 
@@ -176,7 +176,7 @@
 /* Entree: ctx - pointeur vers la structure d'état de l'appelant (doit être initialisée à zéro au départ)                     */
 /* Sortie: TRUE lors du premier appel correspondant à l'instant 23:59:59 ; FALSE le reste du temps                            */
 /******************************************************************************************************************************/
- gboolean Heure_every_end_of_day ( ABLS_HEURE *ctx )
+ gboolean Heure_every_end_of_day ( struct ABLS_HEURE *ctx )
   { struct tm tm_now;
     time_t now;
 
@@ -190,4 +190,27 @@
     ctx->last_triggered = now;
     return (TRUE);
   }
-/*----------------------------------------------------------------------------------------------------------------------------*/
+/******************************************************************************************************************************/
+/* Heure_next_top_set: Renvoie le timestamp du prochain top à partir de maintenant                                            */
+/* Entree: ctx - pointeur vers la structure d'état de l'appelant (doit être initialisée à zéro au départ)                     */
+/* Sortie: timestamp du prochain top à partir de maintenant                                                                   */
+/******************************************************************************************************************************/
+ time_t Heure_next_top_set ( guint target_time )
+  { return (time(NULL) + target_time); }
+/******************************************************************************************************************************/
+/* Heure_next_top_is_out: Vérifie si le prochain top est dépassé                                                              */
+/* Entree: target_time - timestamp du prochain top                                                                            */
+/* Sortie: TRUE si le prochain top est dépassé ; FALSE sinon                                                                  */
+/******************************************************************************************************************************/
+ gboolean Heure_next_top_is_out ( time_t target_time )
+  { return ( target_time <= time(NULL)); }
+/******************************************************************************************************************************/
+/* Heure_next_top_remaining: Renvoie le temps restant avant le prochain top                                                   */
+/* Entree: target_time - timestamp du prochain top                                                                            */
+/* Sortie: temps restant avant le prochain top en secondes ; 0 si le top est déjà dépassé                                     */
+/******************************************************************************************************************************/
+ guint Heure_next_top_remaining ( time_t target_time )
+  { time_t now = time(NULL);
+    return ( target_time > now ? target_time - now : 0 );
+  }
+  /*----------------------------------------------------------------------------------------------------------------------------*/
