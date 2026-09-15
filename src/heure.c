@@ -221,11 +221,11 @@
  time_t Top_set_now ( void )
   { return (time(NULL)); }
 /******************************************************************************************************************************/
-/* Top_since: Renvoie le temps écoulé depuis le dernier top                                                                   */
+/* Top_age: Renvoie le temps écoulé depuis le dernier top                                                                   */
 /* Entree: reference_time - timestamp du dernier top                                                                          */
 /* Sortie: temps écoulé depuis le dernier top en secondes ; 0 si le top est dans le futur                                     */
 /******************************************************************************************************************************/
- guint Top_since ( time_t reference_time )
+ guint Top_age ( time_t reference_time )
   { time_t now = time(NULL);
     return ( reference_time <= now ? now - reference_time : 0 );
   }
