@@ -213,4 +213,20 @@
   { time_t now = time(NULL);
     return ( target_time > now ? target_time - now : 0 );
   }
-  /*----------------------------------------------------------------------------------------------------------------------------*/
+/******************************************************************************************************************************/
+/* Heure_last_top_set_now: Renvoie le timestamp du dernier top à partir de maintenant                                         */
+/* Entree: ctx - pointeur vers la structure d'état de l'appelant (doit être initialisée à zéro au départ)                     */
+/* Sortie: timestamp du dernier top à partir de maintenant                                                                    */
+/******************************************************************************************************************************/
+ time_t Heure_last_top_set_now ( void )
+  { return (time(NULL)); }
+  /******************************************************************************************************************************/
+/* Heure_last_top_set_now: Renvoie le timestamp du dernier top à partir de maintenant                                         */
+/* Entree: ctx - pointeur vers la structure d'état de l'appelant (doit être initialisée à zéro au départ)                     */
+/* Sortie: timestamp du dernier top à partir de maintenant                                                                    */
+/******************************************************************************************************************************/
+ guint Heure_last_top_since ( time_t reference_time )
+  { time_t now = time(NULL);
+    return ( reference_time <= now ? now - reference_time : 0 );
+  }
+/*----------------------------------------------------------------------------------------------------------------------------*/
