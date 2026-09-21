@@ -32,6 +32,7 @@
  #include <glib.h>
 
  extern void String_sanitize ( gchar *str );
+ extern gboolean String_is_a_tech_id ( gchar *str );
 
 #endif /* _ABLS_STRING_H_ */
 /*----------------------------------------------------------------------------------------------------------------------------*/

@@ -25,9 +25,8 @@
  * Boston, MA  02110-1301  USA
  */
 
-#include <glib.h>
-
-#include "string.h"
+ #include <glib.h>
+ #include "string.h"
 
 /******************************************************************************************************************************/
 /* String_sanitize: Remplace en place tous les caracteres non alphanumeriques ASCII par '_'                                   */
@@ -37,5 +36,19 @@
 void String_sanitize ( gchar *str )
  { if (!str) return;
    g_strcanon( str, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", '_');
+ }
+
+/******************************************************************************************************************************/
+/* String_is_a_tech_id: Vérifie si la chaine ne contient que des caracteres alphanumeriques ASCII                             */
+/* Entrée: chaine a verifier                                                                                                  */
+/* Sortie: TRUE si la chaine est un identifiant technique valide, FALSE sinon                                                 */
+/******************************************************************************************************************************/
+gboolean String_is_a_tech_id ( gchar *str )
+ { if (str == NULL) return FALSE;
+   for (gint i = 0; str[i] != '\0'; i++)
+    { gchar c = str[i];
+      if (! ( g_ascii_isalnum(str[i]) || c == '_' )) return(FALSE);
+    }
+   return(TRUE);
  }
 /*----------------------------------------------------------------------------------------------------------------------------*/
