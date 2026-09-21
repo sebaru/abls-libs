@@ -28,10 +28,10 @@
  #include "abls-libs.h"
 
 /*-- Variables internes (thread-safe) ----------------------------------------*/
- static gint    Nbr_log_sent    = 0;
- static GSList *Debug_facilities = NULL;
+ static gint    Nbr_log_sent      = 0;
+ static GSList *Debug_facilities  = NULL;
  static GRWLock Debug_facilities_lock;
- static guint   Log_level       = LOG_INFO;
+ static guint   Log_level         = LOG_INFO;
  static const gchar *Prefixe_name = NULL;
 
 /******************************************************************************************************************************/
@@ -175,6 +175,13 @@
     Log_level = new_log_level;
     Info ( __func__, "log", NULL, LOG_NOTICE, "Log level set to %d", new_log_level );
   }
+/******************************************************************************************************************************/
+/* Info_get_log_level: Retourne le niveau de log global                                                                       */
+/* Entree: neant                                                                                                              */
+/* Sortie: le niveau de log actuel                                                                                            */
+/******************************************************************************************************************************/
+ guint Info_get_log_level ( void )
+  { return ( Log_level ); }
 /******************************************************************************************************************************/
 /* Info_stop: Ferme la connexion syslog                                                                                       */
 /* Entree: neant                                                                                                              */

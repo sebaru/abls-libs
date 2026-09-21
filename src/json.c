@@ -64,38 +64,39 @@
   }
 /******************************************************************************************************************************/
 /* Json_to_log: Dump JsonNode to log                                                                                          */
-/* Entrée: Le node json a dumper                                                                                              */
+/* Entrée: Le nom de la fonction appelante, la facility de log, le préfixe de log, et le node json a dumper                   */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Json_to_log ( gchar *log_facility, gchar *log_prefix, JsonNode *RootNode )
+ void Json_to_log ( gchar *fonction, gchar *log_facility, gchar *log_prefix, guint log_level,JsonNode *RootNode )
   { gchar *name;
     JsonObjectIter iter;
     JsonNode *ObjectMemberNode;
+    if (log_level < Info_get_log_level()) return;       /* Si le niveau de log est inférieur au niveau courant, ne rien faire */
     if (!log_facility) log_facility="json";
     if (!RootNode)
-     { Info ( __func__, log_facility, log_prefix, LOG_ERR, "RootNode is NULL" );
+     { Info ( fonction, log_facility, log_prefix, LOG_ERR, "RootNode is NULL" );
        return;
      }
     JsonObject *RootObject = json_node_get_object(RootNode);                                /* Récupération de l'objet source */
     json_object_iter_init(&iter, RootObject);
-    while (json_object_iter_next(&iter, (const gchar **)&name, &ObjectMemberNode))                        /* Pour tous les membres de l'objet */
+    while (json_object_iter_next(&iter, (const gchar **)&name, &ObjectMemberNode))        /* Pour tous les membres de l'objet */
      { JsonNodeType value_json_type = json_node_get_node_type ( ObjectMemberNode );
        switch (value_json_type)                                                                     /* Selon le type de noeud */
         { default:
           case JSON_NODE_NULL:
-             Info ( __func__, log_facility, log_prefix, LOG_INFO, "%s = 'null'", name );
+             Info ( fonction, log_facility, log_prefix, LOG_INFO, "%s = 'null'", name );
              break;
           case JSON_NODE_OBJECT:
            { gchar prefix[64];
              g_snprintf ( prefix, sizeof(prefix), "%s.%s", log_prefix, name );
              JsonNode *child_node = Json_get_object_as_node ( RootNode, name );
-             Info ( __func__, log_facility, prefix, LOG_INFO, "%s = '{object}'", name );
-             Json_to_log ( log_facility, prefix, child_node );
+             Info ( fonction, log_facility, prefix, LOG_INFO, "%s = '{object}'", name );
+             Json_to_log ( fonction, log_facility, prefix, log_level, child_node );
              break;
            }
           case JSON_NODE_ARRAY:
            { JsonArray *array = json_node_get_array(ObjectMemberNode);
-             Info ( __func__, log_facility, log_prefix, LOG_INFO, "%s = '[array]'", name );
+             Info ( fonction, log_facility, log_prefix, LOG_INFO, "%s = '[array]'", name );
              if (array)
               { guint index, array_length;
                 array_length = json_array_get_length(array);
@@ -103,7 +104,7 @@
                 for (index=0; index<array_length; index++)
                  { g_snprintf ( prefix, sizeof(prefix), "%s[%s].%d", log_prefix, name, index );
                    JsonNode *child_node = json_array_get_element(array, index);
-                   Json_to_log ( log_facility, prefix, child_node );
+                   Json_to_log ( fonction, log_facility, prefix, log_level, child_node );
                  }
               }
              break;
@@ -112,26 +113,26 @@
            { GType valueType = json_node_get_value_type( ObjectMemberNode );                       /* Selon le type de valeur */
              switch (valueType)
               { case G_TYPE_INT64:
-                  { Info ( __func__, log_facility, log_prefix, LOG_INFO, "%s = '%" G_GINT64_FORMAT "'", name, json_node_get_int(ObjectMemberNode) );
+                  { Info ( fonction, log_facility, log_prefix, LOG_INFO, "%s = '%" G_GINT64_FORMAT "'", name, json_node_get_int(ObjectMemberNode) );
                     break;
                   }
                 case G_TYPE_DOUBLE:
-                  { Info ( __func__, log_facility, log_prefix, LOG_INFO, "%s = '%f'", name, json_node_get_double(ObjectMemberNode) );
+                  { Info ( fonction, log_facility, log_prefix, LOG_INFO, "%s = '%f'", name, json_node_get_double(ObjectMemberNode) );
                     break;
                   }
                 case G_TYPE_BOOLEAN:
-                  { Info ( __func__, log_facility, log_prefix, LOG_INFO, "%s = '%s'", name, ( json_node_get_boolean(ObjectMemberNode) ? "true" : "false") );
+                  { Info ( fonction, log_facility, log_prefix, LOG_INFO, "%s = '%s'", name, ( json_node_get_boolean(ObjectMemberNode) ? "true" : "false") );
                     break;
                   }
                 case G_TYPE_STRING:
                   { if (g_strrstr ( name, "password" ) || g_strrstr ( name, "secret" ) || g_strrstr ( name, "token" ) )
-                     { Info ( __func__, log_facility, log_prefix, LOG_INFO, "%s = '******'", name ); }
+                     { Info ( fonction, log_facility, log_prefix, LOG_INFO, "%s = '******'", name ); }
                     else
-                     { Info ( __func__, log_facility, log_prefix, LOG_INFO, "%s = '%s'", name, json_node_get_string(ObjectMemberNode) ); }
+                     { Info ( fonction, log_facility, log_prefix, LOG_INFO, "%s = '%s'", name, json_node_get_string(ObjectMemberNode) ); }
                   }
                   break;
                 default:
-                  { Info ( __func__, log_facility, log_prefix, LOG_INFO, "%s = 'unknown value type'", name ); }
+                  { Info ( fonction, log_facility, log_prefix, LOG_INFO, "%s = 'unknown value type'", name ); }
               }
              break;
            }

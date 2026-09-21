@@ -40,6 +40,7 @@
 /*-- Initialisation / arret --------------------------------------------------------------------------------------------------*/
  extern void Info_init             ( const gchar *entete, const gchar *prefixe_name, guint log_level );
  extern void Info_change_log_level ( guint new_log_level );
+ extern guint Info_get_log_level   ( void );
 
 /*-- Logging -----------------------------------------------------------------------------------------------------------------*/
  extern void Info ( const gchar *function, const gchar *facility, const gchar *prefixe, guint priority,
