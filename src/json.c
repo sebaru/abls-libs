@@ -67,7 +67,7 @@
 /* Entrée: Le nom de la fonction appelante, la facility de log, le préfixe de log, et le node json a dumper                   */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Json_to_log ( gchar *fonction, gchar *log_facility, gchar *log_prefix, guint log_level,JsonNode *RootNode )
+ void Json_to_log ( const gchar *fonction, gchar *log_facility, gchar *log_prefix, guint log_level,JsonNode *RootNode )
   { gchar *name;
     JsonObjectIter iter;
     JsonNode *ObjectMemberNode;
