@@ -15,10 +15,11 @@
 %abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl enable abls-*
 %abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl disable abls-*
 
-%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl --user stop abls-*
-%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl --user start abls-*
-%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl --user restart abls-*
-%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl --user enable abls-*
-%abls ALL=(ALL) NOPASSWD: /usr/bin/systemctl --user disable abls-*
+## User systemd services
+%abls ALL=(ALL) SETENV: NOPASSWD: /usr/bin/systemctl --user stop abls-*
+%abls ALL=(ALL) SETENV: NOPASSWD: /usr/bin/systemctl --user start abls-*
+%abls ALL=(ALL) SETENV: NOPASSWD: /usr/bin/systemctl --user restart abls-*
+%abls ALL=(ALL) SETENV: NOPASSWD: /usr/bin/systemctl --user enable abls-*
+%abls ALL=(ALL) SETENV: NOPASSWD: /usr/bin/systemctl --user disable abls-*
 
 Defaults:%abls !requiretty
