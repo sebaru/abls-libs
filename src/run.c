@@ -64,7 +64,11 @@
      }
 
     if (pid == 0)                                                                                 /* Lancement de la commande */
-     { execvp( (gchar *)argv[0], argv );
+     { if (setsid() < 0)                                               /* Rend la session independante du terminal controleur */
+        { Info(__func__, FACILITY_RUN, NULL, LOG_ERR, "setsid failed for '%s': %s", commande_full, g_strerror(errno));
+          _exit(ABLS_EXEC_FAILED);
+        }
+       execvp( (gchar *)argv[0], argv );
        Info( __func__, FACILITY_RUN, NULL, LOG_ERR, "execvp failed for '%s': %s", commande_full, g_strerror(errno) );
        _exit(ABLS_EXEC_FAILED);
      }
