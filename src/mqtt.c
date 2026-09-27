@@ -284,7 +284,11 @@
   { if (!mqtt || !mqtt->queue) return(NULL);
     if (mqtt->connected == FALSE && mqtt->next_top_connect <= time(NULL) )                        /* tentative de reconnexion */
      { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_INFO, "Retrying MQTT connection to '%s'.", mqtt->hostname );
-       mosquitto_reconnect_async(	mqtt->MOSQ_session	);
+       gint retour = mosquitto_reconnect_async ( mqtt->MOSQ_session );
+       if (retour != MOSQ_ERR_SUCCESS)
+        { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ERR,
+                "MQTT reconnect error: %s", mosquitto_strerror ( retour ) );
+        }
        mqtt->next_top_connect = time(NULL) + ABLS_MQTT_RECONNECT_DELAY;
      }
     return (JsonNode *)g_async_queue_try_pop ( mqtt->queue );
