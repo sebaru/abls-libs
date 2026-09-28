@@ -282,6 +282,7 @@
 /******************************************************************************************************************************/
  JsonNode *Mqtt_get_message ( struct ABLS_MQTT *mqtt )
   { if (!mqtt || !mqtt->queue) return(NULL);
+#ifdef bouh
     if (mqtt->connected == FALSE && mqtt->next_top_connect <= time(NULL) )                        /* tentative de reconnexion */
      { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_INFO, "Retrying MQTT connection to '%s'.", mqtt->hostname );
        gint retour = mosquitto_reconnect_async ( mqtt->MOSQ_session );
@@ -291,7 +292,10 @@
         }
        mqtt->next_top_connect = time(NULL) + ABLS_MQTT_RECONNECT_DELAY;
      }
-    return (JsonNode *)g_async_queue_try_pop ( mqtt->queue );
+     Supprimer ABLS_MQTT_RECONNECT_DELAY
+
+#endif
+     return (JsonNode *)g_async_queue_try_pop ( mqtt->queue );
   }
 /******************************************************************************************************************************/
 /* Mqtt_send_message: Envoie le node au broker                                                                                */
@@ -374,7 +378,7 @@ end:
     mosquitto_connect_callback_set    ( mqtt->MOSQ_session, Mqtt_on_connect_CB );
     mosquitto_disconnect_callback_set ( mqtt->MOSQ_session, Mqtt_on_disconnect_CB );
     mosquitto_message_callback_set    ( mqtt->MOSQ_session, Mqtt_on_message_CB );
-    mosquitto_reconnect_delay_set     ( mqtt->MOSQ_session, 10, 60, TRUE );
+    mosquitto_reconnect_delay_set     ( mqtt->MOSQ_session, ABLS_MQTT_RECONNECT_DELAY, 10*ABLS_MQTT_RECONNECT_DELAY, TRUE );
 
     if (is_ssl)
      { gint retour_tls = mosquitto_tls_set( mqtt->MOSQ_session, resolved_ca_file, resolved_ca_path, NULL, NULL, NULL );
