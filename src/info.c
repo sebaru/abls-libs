@@ -129,13 +129,13 @@
             const gchar *format, ... )
   { gchar resultat[512], chaine[128];
     va_list ap;
-    gboolean forced;
+    gboolean forced = FALSE;
 
-    if (facility)
+    if (facility)                                           /* Si la facility est renseignee , on force l'emission du message */
      { g_rw_lock_reader_lock ( &Debug_facilities_lock );
        if (g_slist_find_custom ( Debug_facilities, facility, (GCompareFunc)g_strcmp0 ) ) forced = TRUE;
        g_rw_lock_reader_unlock ( &Debug_facilities_lock );
-     } else forced = FALSE;
+     }
 
     if (!forced && priority > Log_level) return;
 
