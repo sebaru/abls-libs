@@ -96,7 +96,7 @@
 /* Entrées: request, le niveau demande                                                                                        */
 /* Sortie : la chaine correspondante, ou NULL si absente                                                                      */
 /******************************************************************************************************************************/
- const gchar *Mqtt_get_topic_lvl ( JsonNode *request, gint level )
+ gchar *Mqtt_get_topic_lvl ( JsonNode *request, gint level )
   { gchar name[32];
 
     if (!request || level < 0) return(NULL);
