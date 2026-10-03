@@ -63,7 +63,7 @@
  extern void Mqtt_subscribe ( struct ABLS_MQTT *mqtt, gchar *format, ... );
  extern void Mqtt_unsubscribe ( struct ABLS_MQTT *mqtt, gchar *format, ... );
  extern gboolean Mqtt_topic_is ( JsonNode *request, gint level_count, ... );
- extern const gchar *Mqtt_get_topic_lvl ( JsonNode *request, gint level );
+ extern gchar *Mqtt_get_topic_lvl ( JsonNode *request, gint level );
  extern void Mqtt_send_message     ( struct ABLS_MQTT *mqtt, JsonNode *node, gboolean retain, gchar *topic, ... );
  extern JsonNode *Mqtt_get_message ( struct ABLS_MQTT *mqtt );
 
