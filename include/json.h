@@ -40,22 +40,22 @@
  extern void       Json_ref                     ( JsonNode *RootNode );
  extern void       Json_unref                   ( JsonNode *RootNode );
 /*-- Construction d'objet JSON -----------------------------------------------------------------------------------------------*/
- extern void       Json_add_string              ( JsonNode *RootNode, gchar *name, const gchar *chaine );
- extern void       Json_add_bool                ( JsonNode *RootNode, gchar *name, gboolean valeur );
- extern void       Json_add_double              ( JsonNode *RootNode, gchar *name, gdouble valeur );
- extern void       Json_add_int                 ( JsonNode *RootNode, gchar *name, gint64 valeur );
- extern void       Json_add_null                ( JsonNode *RootNode, gchar *name );
- extern void       Json_remove                  ( JsonNode *RootNode, gchar *name );
- extern JsonArray *Json_add_array               ( JsonNode *RootNode, gchar *name );
- extern JsonNode  *Json_add_object              ( JsonNode *RootNode, gchar *name );
+ extern void       Json_add_string              ( JsonNode *RootNode, const gchar *name, const gchar *chaine );
+ extern void       Json_add_bool                ( JsonNode *RootNode, const gchar *name, gboolean valeur );
+ extern void       Json_add_double              ( JsonNode *RootNode, const gchar *name, gdouble valeur );
+ extern void       Json_add_int                 ( JsonNode *RootNode, const gchar *name, gint64 valeur );
+ extern void       Json_add_null                ( JsonNode *RootNode, const gchar *name );
+ extern void       Json_remove                  ( JsonNode *RootNode, const gchar *name );
+ extern JsonArray *Json_add_array               ( JsonNode *RootNode, const gchar *name );
+ extern JsonNode  *Json_add_object              ( JsonNode *RootNode, const gchar *name );
  extern void       Json_array_add_element       ( JsonArray *array, JsonNode *element );
- extern void       Json_array_add_one_element   ( JsonNode *RootNode, gchar *array_name, JsonNode *element );
- extern void       Json_array_del_one_element   ( JsonNode *RootNode, gchar *array_name, guint index );
- extern JsonNode  *Json_array_get_element_at    ( JsonNode *RootNode, gchar *array_name, guint index );
- extern guint      Json_array_get_length        ( JsonNode *RootNode, gchar *array_name );
- extern void       Json_foreach_array_element   ( JsonNode *RootNode, gchar *array_name,
+ extern void       Json_array_add_one_element   ( JsonNode *RootNode, const gchar *array_name, JsonNode *element );
+ extern void       Json_array_del_one_element   ( JsonNode *RootNode, const gchar *array_name, guint index );
+ extern JsonNode  *Json_array_get_element_at    ( JsonNode *RootNode, const gchar *array_name, guint index );
+ extern guint      Json_array_get_length        ( JsonNode *RootNode, const gchar *array_name );
+ extern void       Json_foreach_array_element   ( JsonNode *RootNode, const gchar *array_name,
                                                   JsonArrayForeach fonction, gpointer data );
- extern void       Json_foreach_array_element_by_thread ( JsonNode *RootNode, gchar *array_name,
+ extern void       Json_foreach_array_element_by_thread ( JsonNode *RootNode, const gchar *array_name,
                                                           GFunc fonction, gpointer fonction_data, guint max_threads );
 
 /*-- Conversion string / parsing ---------------------------------------------------------------------------------------------*/
@@ -64,17 +64,17 @@
  extern JsonNode  *Json_get_from_string         ( const gchar *chaine );
 
 /*-- Extraction de valeurs ---------------------------------------------------------------------------------------------------*/
- extern gchar     *Json_get_string              ( JsonNode *RootNode, gchar *chaine );
- extern gdouble    Json_get_double              ( JsonNode *RootNode, gchar *chaine );
- extern gboolean   Json_get_bool                ( JsonNode *RootNode, gchar *chaine );
- extern gint       Json_get_int                 ( JsonNode *RootNode, gchar *chaine );
- extern JsonArray *Json_get_array               ( JsonNode *RootNode, gchar *chaine );
- extern JsonObject *Json_get_object_as_object   ( JsonNode *RootNode, gchar *chaine );
- extern JsonNode  *Json_get_object_as_node      ( JsonNode *RootNode, gchar *chaine );
+ extern gchar     *Json_get_string              ( JsonNode *RootNode, const gchar *chaine );
+ extern gdouble    Json_get_double              ( JsonNode *RootNode, const gchar *chaine );
+ extern gboolean   Json_get_bool                ( JsonNode *RootNode, const gchar *chaine );
+ extern gint       Json_get_int                 ( JsonNode *RootNode, const gchar *chaine );
+ extern JsonArray *Json_get_array               ( JsonNode *RootNode, const gchar *chaine );
+ extern JsonObject *Json_get_object_as_object   ( JsonNode *RootNode, const gchar *chaine );
+ extern JsonNode  *Json_get_object_as_node      ( JsonNode *RootNode, const gchar *chaine );
  extern gboolean   Json_has_member              ( JsonNode *RootNode, const gchar *chaine );
  extern gboolean   Json_has_mandatory_member    ( JsonNode *RootNode, const gchar *chaine );
- extern guint      Json_array_get_length        ( JsonNode *RootNode, gchar *array_name );
- extern JsonNode  *Json_array_get_element_at    ( JsonNode *RootNode, gchar *array_name, guint index );
+ extern guint      Json_array_get_length        ( JsonNode *RootNode, const gchar *array_name );
+ extern JsonNode  *Json_array_get_element_at    ( JsonNode *RootNode, const gchar *array_name, guint index );
 
 /*-- Lecture de fichier / configuration --------------------------------------------------------------------------------------*/
  extern JsonNode  *Json_read_from_file          ( gchar *filename );

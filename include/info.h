@@ -43,6 +43,7 @@
  extern guint Info_get_log_level   ( void );
 
 /*-- Logging -----------------------------------------------------------------------------------------------------------------*/
+ extern gboolean Info_need_to_log  ( const gchar *facility, guint priority );
  extern void Info ( const gchar *function, const gchar *facility, const gchar *prefixe, guint priority,
                     const gchar *format, ... );
 
