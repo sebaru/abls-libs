@@ -40,21 +40,30 @@
   };
 
  static GSList *Config_parameters = NULL;
-
 /******************************************************************************************************************************/
-/* Config_clear_parameters: Libere le registre statique des parametres CLI                                                   */
+/* Config_parameter_free: Libere un enregistrement du registre statique des parametres CLI                                    */
+/* Entrée: le parametre a liberer                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void Config_parameter_free ( gpointer data )
+  { struct ABLS_CONFIG_PARAMETER *parameter = data;
+    g_free ( parameter->valeur_string );
+    g_free ( parameter );
+  }
+/******************************************************************************************************************************/
+/* Config_clear_parameters: Libere le registre statique des parametres CLI                                                    */
 /* Entrée: néant                                                                                                              */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  static void Config_clear_parameters ( void )
-  { g_slist_free_full ( Config_parameters, g_free );
+  { g_slist_free_full ( Config_parameters, Config_parameter_free );
     Config_parameters = NULL;
   }
 /******************************************************************************************************************************/
 /* Config_build_entries: Construit et retourne un tableau temporaire de GOptionEntry depuis le registre statique              */
 /* Entrée: néant                                                                                                              */
-/* Sortie: pointeur vers le tableau alloue, ou NULL en cas d'erreur d'allocation                                             */
-/* Note: le tableau retourne doit etre libere avec g_free()                                                                  */
+/* Sortie: pointeur vers le tableau alloue, ou NULL en cas d'erreur d'allocation                                              */
+/* Note: le tableau retourne doit etre libere avec g_free()                                                                   */
 /******************************************************************************************************************************/
  static GOptionEntry *Config_build_entries ( void )
   { GOptionEntry *entries;
@@ -115,6 +124,9 @@
     parameter->arg_description = arg_description;
     parameter->description     = description;
     parameter->type            = type;
+    parameter->valeur_flag     = FALSE;
+    parameter->valeur_int      = -1;
+    parameter->valeur_string   = NULL;
     Config_parameters = g_slist_append ( Config_parameters, parameter );
   }
 /******************************************************************************************************************************/
@@ -181,20 +193,22 @@
         { valeur = g_getenv ( *env );                                                                    /* Extrait la valeur */
           if (valeur)
            { env_name = g_ascii_strdown( *env + strlen(prefixe), -1 );                                /* Passage en lowercase */
-             Info ( __func__, FACILITY_CONFIG, NULL, LOG_NOTICE, "Apply ENV '%s' -> '%s' = '%s'", *env, env_name, valeur );
+             Info ( __func__, FACILITY_CONFIG, NULL, LOG_NOTICE, "Apply ENV '%s' -> '%s'", *env, env_name );
                   if ( !strcasecmp ( valeur, "TRUE"  ) ) { Json_add_bool ( target, env_name, TRUE ); }
              else if ( !strcasecmp ( valeur, "FALSE" ) ) { Json_add_bool ( target, env_name, FALSE ); }
              else
               { gchar *endptr = NULL;                 /* Convert only strict integers; keep values like 127.0.0.1 as strings. */
-                g_ascii_strtoll ( valeur, &endptr, 10 );
-                if (endptr && *endptr == '\0' && endptr != valeur)
-                 { Json_add_int  ( target, env_name, atoi(valeur) ); }
+                errno = 0;
+                gint64 number = g_ascii_strtoll ( valeur, &endptr, 10 );
+                if (errno != ERANGE && endptr && *endptr == '\0' && endptr != valeur)
+                 { Json_add_int  ( target, env_name, number ); }
                 else Json_add_string ( target, env_name, valeur );                        /* Sinon d'une chaine de caracteres */
               }
              g_free(env_name);
            }
         }
      }
+    g_strfreev ( env_vars );
   }
 /******************************************************************************************************************************/
 /* Config_apply_ARGV: Parse argc/argv via GOptionContext                                                                     */
@@ -257,7 +271,7 @@
                 break;
               }
              case CONFIG_INT :
-              { if (parameter->valeur_int != 0) Json_add_int(target, name, parameter->valeur_int);
+              { if (parameter->valeur_int != -1) Json_add_int(target, name, parameter->valeur_int);
                 break;
               }
              default : Info ( __func__, FACILITY_CONFIG, NULL, LOG_ERR,
