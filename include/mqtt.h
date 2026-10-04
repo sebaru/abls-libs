@@ -46,9 +46,9 @@
     gboolean connected;
     gint next_top_connect;
     gint qos;
-    GAsyncQueue *queue;
     GRWLock subscribed_topics_lock;
     GSList *subscribed_topics;
+    GAsyncQueue *queue;
   };
 
 /*-- API publique MQTT -------------------------------------------------------------------------------------------------------*/

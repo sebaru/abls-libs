@@ -24,6 +24,10 @@ Le build CMake actuel compile et installe la librairie avec `info`, `json` et `m
 sudo ./install.sh
 ```
 
+GLib 2.66 ou plus recent est requis pour les sauvegardes JSON atomiques et durables.
+
+```
+
 ## Utilisation via pkg-config
 
 ```sh
@@ -47,6 +51,7 @@ Objectif: emission de logs JSON vers syslog, avec filtrage par niveau et forcage
 ```c
 void Info_init(const gchar *entete, const gchar *prefixe_name, guint log_level);
 void Info_change_log_level(guint new_log_level);
+gboolean Info_need_to_log(const gchar *facility, guint priority);
 
 void Info(const gchar *function, const gchar *facility, const gchar *prefixe,
                     guint priority, const gchar *format, ...);
@@ -61,12 +66,13 @@ void Info_clear_debug_facilities(void);
 ### Comportement
 
 - `Info_init` initialise syslog, configure le niveau global et enregistre un cleanup `on_exit`.
-- `Info` emet un JSON contenant `thread`, puis optionnellement `facility`, `function`, et la cle de prefixe definie par `prefixe_name`.
+- `Info` emet un JSON contenant optionnellement `facility`, `function`, `message`, et la cle de prefixe definie par `prefixe_name`. Les chaines sont echappees et les metadonnees ne sont pas interpretees comme des formats printf.
 - Le message est logge si:
     - son `priority` est <= au niveau courant, ou
     - la `facility` est forcee en debug.
 - `Info_reset_nbr_log` retourne le nombre de logs emis depuis le dernier reset et remet le compteur a zero.
 - Les facilities forcees debug sont gerees de maniere thread-safe.
+- `Info_need_to_log` applique le meme filtrage aux dumps JSON, avec comparaison des facilities sans distinction de casse.
 
 ### Exemple
 
@@ -84,7 +90,6 @@ Exemple de payload envoye a syslog:
 
 ```json
 {
-    "thread": "worker-1",
     "thread_tech_id": "main",
     "facility": "json",
     "function": "LoadConfig",
@@ -153,6 +158,10 @@ JsonNode *Json_read_from_file(gchar *filename);
 gboolean Json_write_to_file(gchar *filename, JsonNode *RootNode);
 ```
 
+`Json_write_to_file` serialise avant de toucher au fichier, puis remplace son contenu
+atomiquement avec synchronisation sur disque. Une erreur de serialisation conserve
+le contenu precedent ; les fichiers crees ont les permissions `0600`.
+
 ### Regles de memoire
 
 - `Json_create` et `Json_get_from_string` retournent un node a liberer avec `Json_unref`.
@@ -177,6 +186,7 @@ void Config_apply_ARGV(JsonNode *target, int *argc, char ***argv);
 
 - `Config_apply_FILE` charge un fichier JSON et injecte ses membres dans `target` (écrase les clés existantes).
 - `Config_apply_ENV` scanne les variables d'environnement prefixées par `ABLS_` (minuscule apres prefixe dans JSON), avec type-inference (bool/int/string).
+- Les valeurs ENV ne sont pas journalisees. Les entiers sont convertis sur 64 bits ; une valeur hors plage reste une chaine.
 - `Config_add_parameter` enregistre dynamiquement les options CLI a accepter en conservant les pointeurs `name` et `description` fournis par l'appelant (pas de duplication).
 - `Config_apply_ARGV` reconstruit un tableau `GOptionEntry` temporaire via `GOptionContext`, parse `argc`/`argv`, puis libere ce tableau.
 
