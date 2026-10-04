@@ -34,7 +34,7 @@ project(abls-libs
 include(GNUInstallDirs)
 find_package(PkgConfig REQUIRED)
 
-pkg_check_modules(GLIB    REQUIRED glib-2.0)
+pkg_check_modules(GLIB    REQUIRED glib-2.0>=2.66)
 pkg_check_modules(GTHREAD REQUIRED gthread-2.0)
 pkg_check_modules(JSON_GLIB REQUIRED json-glib-1.0)
 pkg_check_modules(MOSQUITTO REQUIRED libmosquitto)

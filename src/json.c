@@ -71,16 +71,30 @@
   { gchar *name;
     JsonObjectIter iter;
     JsonNode *ObjectMemberNode;
-    if (priority > Info_get_log_level()) return;        /* Si le niveau de log est inférieur au niveau courant, ne rien faire */
-    if (!log_facility) log_facility="json";
+    if (!log_facility) log_facility = FACILITY_JSON;
+    if (!log_prefix)   log_prefix   = FACILITY_JSON;
     if (!RootNode)
      { Info ( fonction, log_facility, log_prefix, LOG_ERR, "RootNode is NULL" );
+       return;
+     }
+    if (!Info_need_to_log ( log_facility, priority )) return;
+    if (!JSON_NODE_HOLDS_OBJECT ( RootNode ))
+     { Info ( fonction, log_facility, log_prefix, priority, "RootNode is not an Json Object. Dropping" );
        return;
      }
     JsonObject *RootObject = json_node_get_object(RootNode);                                /* Récupération de l'objet source */
     json_object_iter_init(&iter, RootObject);
     while (json_object_iter_next(&iter, (const gchar **)&name, &ObjectMemberNode))        /* Pour tous les membres de l'objet */
-     { JsonNodeType value_json_type = json_node_get_node_type ( ObjectMemberNode );
+     { gchar *lower_name = g_ascii_strdown ( name, -1 );
+       gboolean sensitive = g_strrstr(lower_name, "password") ||
+                            g_strrstr(lower_name, "secret") ||
+                            g_strrstr(lower_name, "token");
+       g_free ( lower_name );
+       if (sensitive)
+        { Info ( fonction, log_facility, log_prefix, priority, "%s = '******'", name );
+          continue;
+        }
+       JsonNodeType value_json_type = json_node_get_node_type ( ObjectMemberNode );
        switch (value_json_type)                                                                     /* Selon le type de noeud */
         { default:
           case JSON_NODE_NULL:
@@ -113,26 +127,23 @@
            { GType valueType = json_node_get_value_type( ObjectMemberNode );                       /* Selon le type de valeur */
              switch (valueType)
               { case G_TYPE_INT64:
-                  { Info ( fonction, log_facility, log_prefix, priority, "%s = '%" G_GINT64_FORMAT "'", name, json_node_get_int(ObjectMemberNode) );
-                    break;
-                  }
+                 { Info ( fonction, log_facility, log_prefix, priority, "%s = '%" G_GINT64_FORMAT "'", name, json_node_get_int(ObjectMemberNode) );
+                   break;
+                 }
                 case G_TYPE_DOUBLE:
-                  { Info ( fonction, log_facility, log_prefix, priority, "%s = '%f'", name, json_node_get_double(ObjectMemberNode) );
-                    break;
-                  }
+                 { Info ( fonction, log_facility, log_prefix, priority, "%s = '%f'", name, json_node_get_double(ObjectMemberNode) );
+                   break;
+                 }
                 case G_TYPE_BOOLEAN:
-                  { Info ( fonction, log_facility, log_prefix, priority, "%s = '%s'", name, ( json_node_get_boolean(ObjectMemberNode) ? "true" : "false") );
-                    break;
-                  }
+                 { Info ( fonction, log_facility, log_prefix, priority, "%s = '%s'", name, ( json_node_get_boolean(ObjectMemberNode) ? "true" : "false") );
+                   break;
+                 }
                 case G_TYPE_STRING:
-                  { if (g_strrstr ( name, "password" ) || g_strrstr ( name, "secret" ) || g_strrstr ( name, "token" ) )
-                     { Info ( fonction, log_facility, log_prefix, priority, "%s = '******'", name ); }
-                    else
-                     { Info ( fonction, log_facility, log_prefix, priority, "%s = '%s'", name, json_node_get_string(ObjectMemberNode) ); }
-                  }
-                  break;
+                 { Info ( fonction, log_facility, log_prefix, priority, "%s = '%s'", name, json_node_get_string(ObjectMemberNode) );
+                   break;
+                 }
                 default:
-                  { Info ( fonction, log_facility, log_prefix, priority, "%s = 'unknown value type'", name ); }
+                 { Info ( fonction, log_facility, log_prefix, priority, "%s = 'unknown value type'", name ); }
               }
              break;
            }
@@ -144,7 +155,7 @@
 /* Entrée: le RootNode, le nom du parametre, la valeur                                                                        */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Json_add_string ( JsonNode *RootNode, gchar *name, const gchar *chaine )
+ void Json_add_string ( JsonNode *RootNode, const gchar *name, const gchar *chaine )
   { if (!RootNode) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", name ); return; }
     JsonObject *object = json_node_get_object (RootNode);
     if (chaine) json_object_set_string_member ( object, name, chaine );
@@ -155,7 +166,7 @@
 /* Entrée: le RootNode, le nom du parametre, la valeur                                                                        */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Json_add_bool ( JsonNode *RootNode, gchar *name, gboolean valeur )
+ void Json_add_bool ( JsonNode *RootNode, const gchar *name, gboolean valeur )
   { if (!RootNode) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", name ); return; }
     JsonObject *object = json_node_get_object (RootNode);
     json_object_set_boolean_member ( object, name, valeur );
@@ -165,7 +176,7 @@
 /* Entrée: le RootNode, le nom du parametre, la valeur                                                                        */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Json_add_double ( JsonNode *RootNode, gchar *name, gdouble valeur )
+ void Json_add_double ( JsonNode *RootNode, const gchar *name, gdouble valeur )
   { if (!RootNode) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", name ); return; }
     JsonObject *object = json_node_get_object (RootNode);
     json_object_set_double_member ( object, name, valeur );
@@ -175,17 +186,17 @@
 /* Entrée: le RootNode, le nom du parametre, la valeur                                                                        */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Json_add_int ( JsonNode *RootNode, gchar *name, gint64 valeur )
+ void Json_add_int ( JsonNode *RootNode, const gchar *name, gint64 valeur )
   { if (!RootNode) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", name ); return; }
     JsonObject *object = json_node_get_object (RootNode);
     json_object_set_int_member ( object, name, valeur );
   }
 /******************************************************************************************************************************/
-/* Json_add_null: Ajoute un enregistrement NULL dans le RootNode                                                              */
-/* Entrée: le RootNode, le nom du parametre, la valeur                                                                        */
+/* Json_add_null: Ajoute un enregistrement NULL dans le RootNode                                                             */
+/* Entrée: le RootNode, le nom du parametre                                                                                  */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Json_add_null ( JsonNode *RootNode, gchar *name )
+ void Json_add_null ( JsonNode *RootNode, const gchar *name )
   { if (!RootNode) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", name ); return; }
     JsonObject *object = json_node_get_object (RootNode);
     json_object_set_null_member   ( object, name );
@@ -195,7 +206,7 @@
 /* Entrée: le RootNode, le nom du parametre                                                                                   */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Json_remove ( JsonNode *RootNode, gchar *name )
+ void Json_remove ( JsonNode *RootNode, const gchar *name )
   { if (!RootNode) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", name ); return; }
     JsonObject *object = json_node_get_object (RootNode);
     if (!object) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Object is null for '%s'", name ); return; }
@@ -203,10 +214,10 @@
   }
 /******************************************************************************************************************************/
 /* Json_add_array: Ajoute un enregistrement name/array dans le RootNode                                                       */
-/* Entrée: le RootNode, le nom du parametre, la valeur                                                                        */
+/* Entrée: le RootNode, le nom du parametre                                                                                  */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- JsonArray *Json_add_array ( JsonNode *RootNode, gchar *name )
+ JsonArray *Json_add_array ( JsonNode *RootNode, const gchar *name )
   { if (!RootNode) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", name ); return(NULL); }
     JsonObject *object = json_node_get_object (RootNode);
     JsonArray *tableau = json_array_new();
@@ -218,11 +229,11 @@
 /* Entrée: le RootNode, le nom du parametre, la valeur                                                                        */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- JsonNode *Json_add_object ( JsonNode *RootNode, gchar *name )
+ JsonNode *Json_add_object ( JsonNode *RootNode, const gchar *name )
   { if (!RootNode) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", name ); return(NULL); }
     JsonObject *RootObject = json_node_get_object (RootNode);
     JsonNode *new_node = json_node_alloc();
-    json_node_set_object ( new_node, json_object_new() );
+    json_node_take_object ( new_node, json_object_new() );
     json_object_set_member ( RootObject, name, new_node );
     return(new_node);
   }
@@ -240,7 +251,7 @@
 /* Entrée: le RootNode, le nom du parametre, la valeur                                                                        */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Json_array_add_one_element ( JsonNode *RootNode, gchar *array_name, JsonNode *element )
+ void Json_array_add_one_element ( JsonNode *RootNode, const gchar *array_name, JsonNode *element )
   { if (!RootNode) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", array_name ); return; }
     JsonArray *tableau = Json_get_array ( RootNode, array_name );
     if (tableau) json_array_add_element ( tableau, element );
@@ -250,7 +261,7 @@
 /* Entrée: le RootNode, le nom du parametre, l'index de l'élément à supprimer                                                 */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Json_array_del_one_element ( JsonNode *RootNode, gchar *array_name, guint index )
+ void Json_array_del_one_element ( JsonNode *RootNode, const gchar *array_name, guint index )
   { if (!RootNode) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", array_name ); return; }
     JsonArray *tableau = Json_get_array ( RootNode, array_name );
     if (tableau) json_array_remove_element ( tableau, index );
@@ -260,7 +271,7 @@
 /* Entrée: le RootNode, le nom du tableau, l'index                                                                            */
 /* Sortie: le JsonNode demandé ou NULL                                                                                        */
 /******************************************************************************************************************************/
- JsonNode *Json_array_get_element_at ( JsonNode *RootNode, gchar *array_name, guint index )
+ JsonNode *Json_array_get_element_at ( JsonNode *RootNode, const gchar *array_name, guint index )
   { if (!RootNode) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", array_name ); return(NULL); }
     JsonArray *tableau = Json_get_array ( RootNode, array_name );
     if (!tableau) return(NULL);
@@ -271,7 +282,7 @@
 /* Entrée: le RootNode, le nom du tableau                                                                                     */
 /* Sortie: la taille du tableau, 0 si absent                                                                                  */
 /******************************************************************************************************************************/
- guint Json_array_get_length ( JsonNode *RootNode, gchar *array_name )
+ guint Json_array_get_length ( JsonNode *RootNode, const gchar *array_name )
   { if (!RootNode) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", array_name ); return(0); }
     JsonArray *tableau = Json_get_array ( RootNode, array_name );
     if (!tableau) return(0);
@@ -282,7 +293,7 @@
 /* Entrée: le RootNode, le nom du parametre, la fonction et les donnees utilisateur                                           */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Json_foreach_array_element ( JsonNode *RootNode, gchar *array_name, JsonArrayForeach fonction, gpointer data )
+ void Json_foreach_array_element ( JsonNode *RootNode, const gchar *array_name, JsonArrayForeach fonction, gpointer data )
   { if (!RootNode) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", array_name ); return; }
     json_array_foreach_element ( Json_get_array ( RootNode, array_name ), fonction, data );
   }
@@ -301,7 +312,7 @@
 /* Entrée: le RootNode, le nom du tableau, la fonction à exécuter, les données utilisateur et le nombre maximum de threads    */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Json_foreach_array_element_by_thread ( JsonNode *RootNode, gchar *array_name,
+ void Json_foreach_array_element_by_thread ( JsonNode *RootNode, const gchar *array_name,
                                              GFunc fonction, gpointer fonction_data, guint max_threads )
   { if (!RootNode) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", array_name ); return; }
     JsonArray *array = Json_get_array ( RootNode, array_name );
@@ -338,7 +349,7 @@
 /* Entrée: le RootNode, le nom du parametre                                                                                   */
 /* Sortie: la chaine de caractere                                                                                             */
 /******************************************************************************************************************************/
- gchar *Json_get_string ( JsonNode *RootNode, gchar *chaine )
+ gchar *Json_get_string ( JsonNode *RootNode, const gchar *chaine )
   { if (!RootNode) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", chaine ); return(NULL); }
     JsonObject *object = json_node_get_object (RootNode);
     if (!object) { Info ( __func__, "json", NULL, LOG_ERR, "Object is null for '%s'", chaine );  return(NULL); }
@@ -349,7 +360,7 @@
 /* Entrée: le RootNode, le nom du parametre                                                                                   */
 /* Sortie: la valeur double                                                                                                   */
 /******************************************************************************************************************************/
- gdouble Json_get_double ( JsonNode *RootNode, gchar *chaine )
+ gdouble Json_get_double ( JsonNode *RootNode, const gchar *chaine )
   { if (!RootNode) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", chaine ); return(0.0); }
     JsonObject *object = json_node_get_object (RootNode);
     if (!object) { Info ( __func__, "json", NULL, LOG_ERR, "Object is null for '%s'", chaine );  return(0.0); }
@@ -360,7 +371,7 @@
 /* Entrée: le RootNode, le nom du parametre                                                                                   */
 /* Sortie: la valeur booléenne                                                                                                */
 /******************************************************************************************************************************/
- gboolean Json_get_bool ( JsonNode *RootNode, gchar *chaine )
+ gboolean Json_get_bool ( JsonNode *RootNode, const gchar *chaine )
   { if (!RootNode) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", chaine ); return(FALSE); }
     JsonObject *object = json_node_get_object (RootNode);
     if (!object) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Object is null for '%s'", chaine );  return(FALSE); }
@@ -371,7 +382,7 @@
 /* Entrée: le RootNode, le nom du parametre                                                                                   */
 /* Sortie: la valeur entière                                                                                                  */
 /******************************************************************************************************************************/
- gint Json_get_int ( JsonNode *RootNode, gchar *chaine )
+ gint Json_get_int ( JsonNode *RootNode, const gchar *chaine )
   { if (!RootNode) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", chaine ); return(0); }
     JsonObject *object = json_node_get_object (RootNode);
     if (!object) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Object is null for '%s'", chaine );  return(0); }
@@ -382,7 +393,7 @@
 /* Entrée: le RootNode, le nom du parametre                                                                                   */
 /* Sortie: le tableau                                                                                                         */
 /******************************************************************************************************************************/
- JsonArray *Json_get_array ( JsonNode *RootNode, gchar *chaine )
+ JsonArray *Json_get_array ( JsonNode *RootNode, const gchar *chaine )
   { if (!RootNode) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", chaine ); return(NULL); }
 
     JsonObject *object = json_node_get_object (RootNode);
@@ -394,7 +405,7 @@
 /* Entrée: le RootNode, le nom du parametre                                                                                   */
 /* Sortie: l'objet                                                                                                            */
 /******************************************************************************************************************************/
- JsonObject *Json_get_object_as_object ( JsonNode *RootNode, gchar *chaine )
+ JsonObject *Json_get_object_as_object ( JsonNode *RootNode, const gchar *chaine )
   { if (!RootNode)
      { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", chaine ); return(NULL); }
     JsonObject *object = json_node_get_object (RootNode);
@@ -406,7 +417,7 @@
 /* Entrée: le RootNode, le nom du parametre                                                                                   */
 /* Sortie: le node                                                                                                            */
 /******************************************************************************************************************************/
- JsonNode *Json_get_object_as_node ( JsonNode *RootNode, gchar *chaine )
+ JsonNode *Json_get_object_as_node ( JsonNode *RootNode, const gchar *chaine )
   { if (!RootNode)
      { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Node is NULL for '%s'", chaine ); return(NULL); }
     JsonObject *object = json_node_get_object (RootNode);
@@ -420,7 +431,7 @@
 /******************************************************************************************************************************/
  gboolean Json_has_member ( JsonNode *RootNode, const gchar *chaine )
   { if (!RootNode)
-     { Info ( __func__, "json", NULL, LOG_ERR, "RootNode is null for '%s'", chaine );  return(FALSE); }
+     { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "RootNode is null for '%s'", chaine );  return(FALSE); }
     JsonObject *object = json_node_get_object (RootNode);
 
     if (!object)                                        return(FALSE);
@@ -435,13 +446,13 @@
 /******************************************************************************************************************************/
  gboolean Json_has_mandatory_member ( JsonNode *RootNode, const gchar *chaine )
   { if (!RootNode)
-     { Info ( __func__, "json", NULL, LOG_ERR, "RootNode is null for '%s'", chaine );  return(FALSE); }
+     { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "RootNode is null for '%s'", chaine );  return(FALSE); }
     JsonObject *object = json_node_get_object (RootNode);
-    if (!object) { Info ( __func__, "json", NULL, LOG_ERR, "Object is null for '%s'", chaine );  return(FALSE); }
+    if (!object) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Object is null for '%s'", chaine );  return(FALSE); }
     if (!json_object_has_member ( object, chaine ))
-     { Info ( __func__, "json", NULL, LOG_DEBUG, "%s is missing", chaine ); return(FALSE); }
+     { Info ( __func__, FACILITY_JSON, NULL, LOG_DEBUG, "%s is missing", chaine ); return(FALSE); }
     if (json_object_get_null_member ( object, chaine ))
-     { Info ( __func__, "json", NULL, LOG_DEBUG, "%s is null", chaine ); return(FALSE); }
+     { Info ( __func__, FACILITY_JSON, NULL, LOG_DEBUG, "%s is null", chaine ); return(FALSE); }
     return( TRUE );
   }
 /******************************************************************************************************************************/
@@ -450,25 +461,16 @@
 /* Sortie: le buffer JsonNode                                                                                                 */
 /******************************************************************************************************************************/
  JsonNode *Json_read_from_file ( gchar *filename )
-  { struct stat stat_buf;
-    if (stat ( filename, &stat_buf)==-1) return(NULL);
-
-    JsonNode *node = NULL;
-    gchar *content = g_try_malloc0 ( stat_buf.st_size+1 );
-    if (!content) return(NULL);
-
-    gint fd = open ( filename, O_RDONLY );
-    if (fd < 0)
-     { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Unable to open json file %s: %s", filename, strerror(errno) );
-       goto end;
+  { if (!filename) return(NULL);
+    gchar *content = NULL;
+    GError *error = NULL;
+    if (!g_file_get_contents ( filename, &content, NULL, &error ))
+     { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Unable to read json file %s: %s", filename, error->message );
+       g_error_free ( error );
+       return(NULL);
      }
-
-    if (read ( fd, content, stat_buf.st_size ) == stat_buf.st_size)
-     { node = Json_get_from_string ( content );
-       if (!node) Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Unable to parse: file %s is not JSON", filename );
-     } else Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Unable to read json file %s: %s", filename, strerror(errno) );
-    close(fd);
-end:
+    JsonNode *node = Json_get_from_string ( content );
+    if (!node) Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Unable to parse: file %s is not JSON", filename );
     g_free(content);
     return(node);
   }
@@ -478,28 +480,19 @@ end:
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
  gboolean Json_write_to_file ( gchar *filename, JsonNode *RootNode )
-  { unlink ( filename );
-    gint fd = creat ( filename, S_IWUSR | S_IRUSR );
-    if (fd < 0)
-     { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Create '%s' failed: %s", filename, strerror(errno) );
-       return(FALSE);
-     }
-
+  { if (!filename || !RootNode) return(FALSE);
     gchar *buf = Json_to_pretty_string ( RootNode );
     if (!buf)
-     { close(fd);
-       Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Json to Buf failed, writing to '%s'", filename );
+     { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Json to Buf failed, writing to '%s'", filename );
        return(FALSE);
      }
-
-    gint taille = strlen(buf);
-    gboolean retour = TRUE;
-    if (write ( fd, buf, taille ) != taille)
-     { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Error writing %d bytes to '%s': %s", taille, filename, strerror(errno) );
-       retour = FALSE;
+    GError *error = NULL;
+    gboolean retour = g_file_set_contents_full ( filename, buf, -1,
+                      G_FILE_SET_CONTENTS_CONSISTENT | G_FILE_SET_CONTENTS_DURABLE, S_IWUSR | S_IRUSR, &error );
+    if (!retour)
+     { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Error writing '%s': %s", filename, error->message );
+       g_error_free ( error );
      }
-
-    close(fd);
     g_free(buf);
     return(retour);
   }

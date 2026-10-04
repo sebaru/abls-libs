@@ -26,12 +26,13 @@
  */
 
  #include "abls-libs.h"
+ #define FACILITY_LOGGUER "logguer"
 
 /*-- Variables internes (thread-safe) ----------------------------------------*/
  static gint    Nbr_log_sent      = 0;
  static GSList *Debug_facilities  = NULL;
  static GRWLock Debug_facilities_lock;
- static guint   Log_level         = LOG_INFO;
+ static gint    Log_level         = LOG_INFO;
  static const gchar *Prefixe_name = NULL;
 
 /******************************************************************************************************************************/
@@ -113,6 +114,22 @@
  gint Info_reset_nbr_log ( void )
   { return ( g_atomic_int_and ( &Nbr_log_sent, 0 ) ); }
 /******************************************************************************************************************************/
+/* Info_need_to_log: Indique si un message doit etre logge en fonction de la facility et de la priority                       */
+/* Entree: facility - la facility du message                                                                                  */
+/*         priority - la priority du message                                                                                  */
+/* Sortie: TRUE si le message doit etre logge, FALSE sinon                                                                    */
+/******************************************************************************************************************************/
+ gboolean Info_need_to_log ( const gchar *facility, guint priority )
+  { gboolean forced = FALSE;
+    if (facility)
+     { if ( g_strcmp0 ( facility, FACILITY_LOGGUER ) == 0 ) return(TRUE);
+       g_rw_lock_reader_lock ( &Debug_facilities_lock );
+       forced = g_slist_find_custom ( Debug_facilities, facility, (GCompareFunc)g_ascii_strcasecmp ) != NULL;
+       g_rw_lock_reader_unlock ( &Debug_facilities_lock );
+     }
+    return ( forced || priority <= (guint)g_atomic_int_get ( &Log_level ) );
+  }
+/******************************************************************************************************************************/
 /* Info: Envoie un message structure JSON vers syslog                                                                         */
 /* Entree: function  - nom de la fonction appelante (__func__)                                                                */
 /*         facility  - sous-systeme / module (ex: "smsg", "json") ; NULL si non renseigne                                     */
@@ -127,41 +144,26 @@
 /******************************************************************************************************************************/
  void Info ( const gchar *function, const gchar *facility, const gchar *prefixe, guint priority,
             const gchar *format, ... )
-  { gchar resultat[512], chaine[128];
+  { if (!Info_need_to_log ( facility, priority )) return;
     va_list ap;
-    gboolean forced;
-
-    if (facility)
-     { g_rw_lock_reader_lock ( &Debug_facilities_lock );
-       if (g_slist_find_custom ( Debug_facilities, facility, (GCompareFunc)g_strcmp0 ) ) forced = TRUE;
-       g_rw_lock_reader_unlock ( &Debug_facilities_lock );
-     } else forced = FALSE;
-
-    if (!forced && priority > Log_level) return;
-
-    g_snprintf ( resultat, sizeof(resultat), "{ " );
-    if (facility)
-     { g_snprintf ( chaine, sizeof(chaine), "\"facility\": \"%s\", ", facility );
-       g_strlcat ( resultat, chaine, sizeof(resultat) );
-     }
-    if (Prefixe_name && prefixe)
-     { g_snprintf ( chaine, sizeof(chaine), "\"%s\": \"%s\", ", Prefixe_name, prefixe );
-       g_strlcat ( resultat, chaine, sizeof(resultat) );
-     }
-    if (function)
-     { g_snprintf ( chaine, sizeof(chaine), "\"function\": \"%s\", ", function );
-       g_strlcat ( resultat, chaine, sizeof(resultat) );
-     }
+    gchar *message = NULL;
     if (format)
-     { g_snprintf ( chaine, sizeof(chaine), "\"message\": \"%s\" ", format );
-       g_strlcat ( resultat, chaine, sizeof(resultat) );
+     { va_start ( ap, format );
+       message = g_strdup_vprintf ( format, ap );
+       va_end ( ap );
      }
-    g_strlcat ( resultat, " }", sizeof(resultat) );
-
-    va_start ( ap, format );
-    vsyslog ( priority, resultat, ap );
-    va_end ( ap );
-
+    JsonNode *RootNode = Json_create();
+    if (!RootNode) return;
+    if (facility) Json_add_string ( RootNode, "facility", facility );
+    if (Prefixe_name && prefixe)
+     { Json_add_string ( RootNode, (const gchar *)Prefixe_name, prefixe ); }
+    if (function) Json_add_string ( RootNode, "function", function );
+    if (message) Json_add_string ( RootNode, "message", message );
+    g_free ( message );
+    gchar *resultat = Json_to_string ( RootNode );
+    syslog ( priority, "%s", resultat );
+    g_free ( resultat );
+    Json_unref ( RootNode );
     g_atomic_int_inc ( &Nbr_log_sent );
   }
 /******************************************************************************************************************************/
@@ -170,10 +172,9 @@
 /* Sortie: neant                                                                                                              */
 /******************************************************************************************************************************/
  void Info_change_log_level ( guint new_log_level )
-  { if (new_log_level < LOG_EMERG) { new_log_level = LOG_EMERG; }
-    if (new_log_level > LOG_DEBUG) { new_log_level = LOG_DEBUG; }
-    Log_level = new_log_level;
-    Info ( __func__, "log", NULL, LOG_NOTICE, "Log level set to %d", new_log_level );
+  { if (new_log_level > LOG_DEBUG) { new_log_level = LOG_DEBUG; }
+    g_atomic_int_set ( &Log_level, new_log_level );
+    Info ( __func__, FACILITY_LOGGUER, NULL, LOG_NOTICE, "Log level set to %d", new_log_level );
   }
 /******************************************************************************************************************************/
 /* Info_get_log_level: Retourne le niveau de log global                                                                       */
@@ -181,7 +182,7 @@
 /* Sortie: le niveau de log actuel                                                                                            */
 /******************************************************************************************************************************/
  guint Info_get_log_level ( void )
-  { return ( Log_level ); }
+  { return ( g_atomic_int_get ( &Log_level ) ); }
 /******************************************************************************************************************************/
 /* Info_stop: Ferme la connexion syslog                                                                                       */
 /* Entree: neant                                                                                                              */
@@ -189,7 +190,7 @@
 /******************************************************************************************************************************/
  static void Info_stop ( int code_retour, void *data )
   { Info_clear_debug_facilities ();
-    Info ( __func__, "log", NULL, LOG_NOTICE, "End of logs" );
+    Info ( __func__, FACILITY_LOGGUER, NULL, LOG_NOTICE, "End of logs" );
     g_rw_lock_clear ( &Debug_facilities_lock );
     closelog();
   }
@@ -206,7 +207,7 @@
     Prefixe_name     = prefixe_name;
     on_exit( Info_stop, NULL );
     openlog ( entete, LOG_CONS | LOG_PID, LOG_USER );
-    Info ( __func__, "log", NULL, LOG_INFO, "Start of logs with ABLS_LIBS_VERSION=%s", ABLS_LIBS_VERSION );
+    Info ( __func__, FACILITY_LOGGUER, NULL, LOG_INFO, "Start of logs with ABLS_LIBS_VERSION=%s", ABLS_LIBS_VERSION );
     Info_change_log_level ( log_level );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
