@@ -31,8 +31,8 @@
  #include_next <string.h>
  #include <glib.h>
 
- extern void String_sanitize ( gchar *str );
- extern gboolean String_is_a_tech_id ( gchar *str );
+ extern void String_to_alpha_num ( gchar *str );
+ extern gboolean String_is_alphanum ( gchar *str );
 
 #endif /* _ABLS_STRING_H_ */
 /*----------------------------------------------------------------------------------------------------------------------------*/
