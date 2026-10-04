@@ -29,21 +29,21 @@
  #include "string.h"
 
 /******************************************************************************************************************************/
-/* String_sanitize: Remplace en place tous les caracteres non alphanumeriques ASCII par '_'                                   */
-/* Entrée: chaine a sanitiser                                                                                                  */
-/* Sortie: néant                                                                                                               */
+/* String_to_alphanum: Remplace en place tous les caracteres non alphanumeriques ASCII par '_'                                */
+/* Entrée: chaine a sanitiser                                                                                                 */
+/* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
-void String_sanitize ( gchar *str )
+void String_to_alphanum ( gchar *str )
  { if (!str) return;
    g_strcanon( str, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", '_');
  }
 
 /******************************************************************************************************************************/
-/* String_is_a_tech_id: Vérifie si la chaine ne contient que des caracteres alphanumeriques ASCII                             */
+/* String_is_alphanum: Vérifie si la chaine ne contient que des caracteres alphanumeriques ASCII ou '_'                       */
 /* Entrée: chaine a verifier                                                                                                  */
-/* Sortie: TRUE si la chaine est un identifiant technique valide, FALSE sinon                                                 */
+/* Sortie: TRUE si la chaine est alphanumerique, FALSE sinon                                                                  */
 /******************************************************************************************************************************/
-gboolean String_is_a_tech_id ( gchar *str )
+gboolean String_is_alphanum ( gchar *str )
  { if (str == NULL) return FALSE;
    for (gint i = 0; str[i] != '\0'; i++)
     { gchar c = str[i];
