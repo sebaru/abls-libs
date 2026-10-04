@@ -184,7 +184,7 @@
     GSList *found = g_slist_find_custom ( mqtt->subscribed_topics, topic_full, (GCompareFunc)g_strcmp0 );
     if (found)
      { gchar *topic_to_remove = found->data;
-       mqtt->subscribed_topics = g_slist_remove ( mqtt->subscribed_topics, found );
+       mqtt->subscribed_topics = g_slist_remove ( mqtt->subscribed_topics, topic_to_remove );
        if (Mqtt_is_connected ( mqtt ))
         { gint retour = mosquitto_unsubscribe ( mqtt->MOSQ_session, NULL, topic_full );
           if (retour != MOSQ_ERR_SUCCESS)
@@ -237,13 +237,13 @@
         }
 
        g_rw_lock_reader_unlock(&mqtt->subscribed_topics_lock);                               /* Envoi des messages en attente */
-       while ( g_async_queue_length ( mqtt->queue ) > 0 )
-        { struct ABLS_MQTT_PUBLICATION *publication = g_async_queue_try_pop ( mqtt->queue );
+       while ( g_async_queue_length ( mqtt->publish_queue ) > 0 )
+        { struct ABLS_MQTT_PUBLICATION *publication = g_async_queue_try_pop ( mqtt->publish_queue );
           if (!publication) break;
           gint retour = mosquitto_publish ( mqtt->MOSQ_session, NULL, publication->topic,
                                            strlen(publication->payload), publication->payload, mqtt->qos, publication->retain );
           if (retour != MOSQ_ERR_SUCCESS)
-           { g_async_queue_push_front ( mqtt->queue, publication );                        /* on remet sur la queue si erreur */
+           { g_async_queue_push_front ( mqtt->publish_queue, publication );                /* on remet sur la queue si erreur */
              Info ( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ERR,
                     "MQTT retry publish error: %s", mosquitto_strerror(retour) );
              break;
@@ -308,7 +308,7 @@
           Json_add_string ( message, name, tokens[i] );         /* Ajoute les tokens dans le node pour traitement plus simple */
         }
        Json_add_string ( message, "mqtt_topic", msg->topic );                         /* Ajoute le topic complet dans le node */
-       g_async_queue_push ( mqtt->queue, message );/* Ajoute le message dans la queue pour traitement par le thread principal */
+       g_async_queue_push ( mqtt->receive_queue, message );/* Ajoute le message dans la queue pour traitement par le thread principal */
      }
     g_strfreev( tokens );                                                                      /* Libération des tokens topic */
   }
@@ -318,8 +318,8 @@
 /* Sortie : un JsonNode si disponible, NULL sinon                                                                             */
 /******************************************************************************************************************************/
  JsonNode *Mqtt_get_message ( struct ABLS_MQTT *mqtt )
-  { if (!mqtt || !mqtt->queue) return(NULL);
-    return (JsonNode *)g_async_queue_try_pop ( mqtt->queue );
+  { if (!mqtt || !mqtt->receive_queue) return(NULL);
+    return (JsonNode *)g_async_queue_try_pop ( mqtt->receive_queue );
   }
 /******************************************************************************************************************************/
 /* Mqtt_send_message: Envoie le node au broker                                                                                */
@@ -348,7 +348,7 @@
       publication->topic   = g_strdup ( topic_full );
       publication->payload = buffer;
       publication->retain  = retain;
-      g_async_queue_push ( mqtt->queue, publication );
+      g_async_queue_push ( mqtt->publish_queue, publication );
       buffer = NULL;
      }
 end:
@@ -389,7 +389,8 @@ end:
     mqtt->port         = port;
     g_atomic_int_set ( &mqtt->connected, FALSE );
     mqtt->qos          = qos;
-    mqtt->queue        = g_async_queue_new_full ( Mqtt_publish_free );
+    mqtt->publish_queue= g_async_queue_new_full ( Mqtt_publish_free );
+    mqtt->receive_queue= g_async_queue_new_full ( (GDestroyNotify) Json_unref );
     mqtt->subscribed_topics = NULL;
     g_rw_lock_init(&mqtt->subscribed_topics_lock);
 
@@ -467,7 +468,8 @@ end:
        mosquitto_destroy( mqtt->MOSQ_session );
        mqtt->MOSQ_session = NULL;
      }
-    if (mqtt->queue) g_async_queue_unref(mqtt->queue); /* Fait automatiquement Mqtt_publish_free sur les éléments de la queue */
+    if (mqtt->receive_queue) g_async_queue_unref(mqtt->receive_queue);    /* Fait automatiquement Json_unref sur les éléments */
+    if (mqtt->publish_queue) g_async_queue_unref(mqtt->publish_queue);              /* Fait automatiquement Mqtt_publish_free */
     if (mqtt->subscribed_topics) g_slist_free_full(mqtt->subscribed_topics, g_free);
     g_rw_lock_clear(&mqtt->subscribed_topics_lock);
     Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_NOTICE, "Disconnected %s@%s:%d (client_id=%s).",

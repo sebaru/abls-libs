@@ -48,7 +48,8 @@
     gint qos;
     GRWLock subscribed_topics_lock;
     GSList *subscribed_topics;
-    GAsyncQueue *queue;
+    GAsyncQueue *receive_queue;
+    GAsyncQueue *publish_queue;
   };
 
 /*-- API publique MQTT -------------------------------------------------------------------------------------------------------*/

@@ -26,8 +26,6 @@ sudo ./install.sh
 
 GLib 2.66 ou plus recent est requis pour les sauvegardes JSON atomiques et durables.
 
-```
-
 ## Utilisation via pkg-config
 
 ```sh
