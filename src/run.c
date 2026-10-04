@@ -57,6 +57,7 @@
 
     Info( __func__, FACILITY_RUN, NULL, LOG_INFO, "Running command: %s", commande_full );
 
+    gint return_status = -1;
     pid_t pid = fork();
     if (pid < 0)                                                                                         /* Si erreur de fork */
      { Info( __func__, FACILITY_RUN, NULL, LOG_ERR, "fork failed for '%s': %s", commande_full, g_strerror(errno) );
@@ -75,28 +76,28 @@
 
     Info( __func__, FACILITY_RUN, NULL, LOG_INFO, "Forked pid %d for '%s'", pid, commande_full );             /* Dans le pere */
 
-    if (!wait_for_completion) goto end;                                /* Si on ne veut pas attendre la fin du processus fils */
+    if (!wait_for_completion) { return_status = 0; goto end; }
 
-    gint status = -1;
-    while (waitpid(pid, &status, 0) < 0)
+    while (waitpid(pid, &return_status, 0) < 0)
      { if (errno == EINTR) continue;
        Info( __func__, FACILITY_RUN, NULL, LOG_ERR, "waitpid failed for '%s': %s", commande_full, g_strerror(errno) );
+       return_status = -1;
        goto end;
      }
 
-    if (WIFEXITED(status))
-     { status = WEXITSTATUS(status);
-       Info( __func__, FACILITY_RUN, NULL, LOG_INFO, "Command '%s' exited with code %d", commande_full, status );
+    if (WIFEXITED(return_status))
+     { return_status = WEXITSTATUS(return_status);
+       Info( __func__, FACILITY_RUN, NULL, LOG_INFO, "Command '%s' exited with code %d", commande_full, return_status );
      }
-    else if (WIFSIGNALED(status))
-     { status = 128 + WTERMSIG(status);
-       Info( __func__, FACILITY_RUN, NULL, LOG_ERR, "Command '%s' killed by signal %d", commande_full, WTERMSIG(status) );
+    else if (WIFSIGNALED(return_status))
+     { return_status = 128 + WTERMSIG(return_status);
+       Info( __func__, FACILITY_RUN, NULL, LOG_ERR, "Command '%s' killed by signal %d", commande_full, WTERMSIG(return_status) );
        goto end;
      }
 
 end:
     g_strfreev(argv);
-    return( status );
+    return( return_status );
   }
 /******************************************************************************************************************************/
 /* Run_shell: Lance la commande demandee apres formatage printf-like de la chaine                                             */
@@ -164,6 +165,7 @@ end:
        return(FALSE);
      }
     Info( __func__, FACILITY_RUN, name, LOG_INFO, "Thread '%s' started (detached)", name );
+    g_thread_unref ( thread );
     return(TRUE);
   }
 /******************************************************************************************************************************/
