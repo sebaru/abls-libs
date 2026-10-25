@@ -264,7 +264,7 @@
  static void Mqtt_on_disconnect_CB( struct mosquitto *mosq, void *obj, int return_code )
   { struct ABLS_MQTT *mqtt = (struct ABLS_MQTT *)obj;
     Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_NOTICE, "Disconnected %s@%s:%d (client_id=%s) -> return code %d: %s",
-          mqtt->username, mqtt->hostname, mqtt->port, mqtt->client_id, return_code, mosquitto_connack_string( return_code ) );
+          mqtt->username, mqtt->hostname, mqtt->port, mqtt->client_id, return_code, mosquitto_strerror( return_code ) );
     g_atomic_int_set ( &mqtt->connected, FALSE );
   }
 /******************************************************************************************************************************/
