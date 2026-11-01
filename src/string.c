@@ -51,4 +51,14 @@ gboolean String_is_alphanum ( gchar *str )
     }
    return(TRUE);
  }
+
+/******************************************************************************************************************************/
+/* String_is_valid_tech_id: Valide un identifiant technique de 1 a 32 caracteres ASCII alphanumeriques ou '_'                  */
+/* Entree: identifiant technique a verifier                                                                                   */
+/* Sortie: TRUE si l'identifiant est valide, FALSE sinon                                                                       */
+/******************************************************************************************************************************/
+gboolean String_is_valid_tech_id ( gchar *str )
+ { if (!str || !*str || strlen(str) > 32) return(FALSE);
+   return(String_is_alphanum(str));
+ }
 /*----------------------------------------------------------------------------------------------------------------------------*/
