@@ -33,6 +33,7 @@
 
  extern void String_to_alpha_num ( gchar *str );
  extern gboolean String_is_alphanum ( gchar *str );
+ extern gboolean String_is_valid_tech_id ( gchar *str );
 
 #endif /* _ABLS_STRING_H_ */
 /*----------------------------------------------------------------------------------------------------------------------------*/
