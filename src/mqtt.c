@@ -137,7 +137,7 @@
     g_vsnprintf ( topic_full, sizeof(topic_full), format, ap );
     va_end ( ap );
 
-    retour = mosquitto_will_set ( mqtt->MOSQ_session, topic_full, strlen(will), will, mqtt->qos, FALSE );
+    retour = mosquitto_will_set ( mqtt->MOSQ_session, topic_full, strlen(will), will, mqtt->qos, TRUE );
     if (retour != MOSQ_ERR_SUCCESS)
      { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ERR, "MQTT last will setup error on topic '%s': %s",
              topic_full, mosquitto_strerror ( retour ) );
@@ -225,7 +225,6 @@
      { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_NOTICE, "Connected %s@%s:%d (client_id=%s) -> return code %d: %s",
              mqtt->username, mqtt->hostname, mqtt->port, mqtt->client_id, return_code, mosquitto_connack_string( return_code ) );
        g_rw_lock_reader_lock(&mqtt->subscribed_topics_lock);
-       g_atomic_int_set ( &mqtt->connected, TRUE );
        GSList *liste = mqtt->subscribed_topics;
        while (liste)                                                                    /* souscrit aux topics a la connexion */
         { gchar *topic = (gchar *)liste->data;
@@ -250,6 +249,7 @@
            }
           Mqtt_publish_free ( publication );
         }
+       g_atomic_int_set ( &mqtt->connected, TRUE );
      }
     else
      { Info( __func__, mqtt->log_facility, mqtt->log_prefixe, LOG_ERR, "Connection failed %s@%s:%d (client_id=%s) -> return code %d: %s",
