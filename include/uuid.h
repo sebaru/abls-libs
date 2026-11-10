@@ -31,6 +31,7 @@
  #include <glib.h>
 
  extern void UUID_New ( gchar *target );
+ extern gboolean UUID_is_valid ( const gchar *str );
 
 #endif /* _ABLS_UUID_H_ */
 /*----------------------------------------------------------------------------------------------------------------------------*/
