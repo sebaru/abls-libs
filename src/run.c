@@ -208,6 +208,15 @@ end:
      { Info ( __func__, FACILITY_RUN, abls_pool->name, LOG_ERR, "Unable to push data to pool" ); }
   }
 /******************************************************************************************************************************/
+/* Run_pool_unprocessed: Renvoie le nombre de taches en attente de traitement dans le pool                                    */
+/* Entree: abls_pool - pool initialise par Run_thread_pool_init                                                               */
+/* Sortie: nombre de taches non encore traitees                                                                              */
+/******************************************************************************************************************************/
+ gint Run_thread_pool_unprocessed ( struct ABLS_RUN_POOL *abls_pool )
+  { if (!abls_pool) { Info ( __func__, FACILITY_RUN, NULL, LOG_ERR, "Pool is NULL" ); return(0); }
+    return( g_thread_pool_unprocessed ( abls_pool->g_pool ) );
+  }
+/******************************************************************************************************************************/
 /* Run_thread_pool_end: Termine et libere les ressources du pool de threads                                                   */
 /* Entree: abls_pool           - pool a terminer                                                                              */
 /*         wait_for_completion - TRUE pour attendre les threads en cours, FALSE sinon                                         */
