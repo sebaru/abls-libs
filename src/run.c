@@ -26,6 +26,8 @@
  */
 
  #include <errno.h>
+ #include <pthread.h>
+ #include <signal.h>
  #include <stdarg.h>
  #include <sys/wait.h>
  #include <unistd.h>
@@ -174,26 +176,46 @@ end:
 /*         pool_fonction - fonction a executer pour chaque tache (GFunc)                                                      */
 /*         pool_data     - donnees utilisateur transmises a chaque appel de pool_fonction                                     */
 /*         max_threads   - nombre maximum de threads dans le pool                                                             */
-/*         max_queued    - nombre maximum de taches en attente (-1 pour illimite)                                             */
+/*         max_queued    - nombre maximum de taches en attente (0 pour illimite)                                              */
+/*                       Les workers exclusifs héritent du masque SIGALRM de l'appelant lors de leur création.                */
 /* Sortie: pointeur sur ABLS_RUN_POOL si succes, NULL si erreur                                                               */
 /******************************************************************************************************************************/
  struct ABLS_RUN_POOL *Run_thread_pool_init ( gchar *name, GFunc pool_fonction, gpointer pool_data, guint max_threads, gint max_queued )
   { if (!name) name = "New_pool";
     if (!pool_fonction) { Info ( __func__, FACILITY_RUN, name, LOG_ERR, "Function is NULL" ); return(NULL); }
     if (max_threads < 1) max_threads = 1;
-    if (max_queued < -1) max_queued  = -1;
+    if (max_queued  < 0) max_queued  = 0;
 
     struct ABLS_RUN_POOL *abls_pool = g_try_malloc0 ( sizeof (struct ABLS_RUN_POOL) );
     if (!abls_pool) { Info ( __func__, FACILITY_RUN, name, LOG_ERR, "Unable to allocate memory for abls_pool" ); return(NULL); }
 
     g_mutex_init ( &abls_pool->push_lock );
     GError *error = NULL;
-    abls_pool->g_pool = g_thread_pool_new ( pool_fonction, pool_data, max_threads, FALSE, &error );
+    sigset_t alrm_set, old_set;
+    sigemptyset ( &alrm_set );
+    sigaddset ( &alrm_set, SIGALRM );
+    gint mask_error = pthread_sigmask ( SIG_BLOCK, &alrm_set, &old_set );
+    if (mask_error)
+     { Info ( __func__, FACILITY_RUN, name, LOG_ERR, "Unable to block SIGALRM: %s", g_strerror ( mask_error ) );
+       Run_thread_pool_end ( abls_pool, TRUE );
+       return(NULL);
+     }
+
+    abls_pool->g_pool = g_thread_pool_new ( pool_fonction, pool_data, max_threads, TRUE, &error );
+
+    gint restore_error = pthread_sigmask ( SIG_SETMASK, &old_set, NULL );
+    if (restore_error)
+     { Info ( __func__, FACILITY_RUN, name, LOG_ERR, "Unable to restore signal mask: %s", g_strerror ( restore_error ) );
+       if (abls_pool->g_pool) g_thread_pool_free ( abls_pool->g_pool, FALSE, TRUE );
+       if (error) g_error_free ( error );
+       Run_thread_pool_end ( abls_pool, TRUE );
+       return(NULL);
+     }
+
     if (!abls_pool->g_pool)
      { Info ( __func__, FACILITY_RUN, name, LOG_ERR, "g_thread_pool_new failed: %s", error ? error->message : "unknown error" );
        if (error) g_error_free ( error );
-       g_mutex_clear ( &abls_pool->push_lock );
-       g_free(abls_pool);
+       Run_thread_pool_end ( abls_pool, TRUE );
        return(NULL);
      }
     g_snprintf ( abls_pool->name, sizeof(abls_pool->name), "%s", name );
@@ -201,7 +223,7 @@ end:
     abls_pool->max_queued     = max_queued;
     abls_pool->pool_fonction  = pool_fonction;
     abls_pool->pool_data      = pool_data;
-    if (max_queued == -1)
+    if (max_queued == 0)
      { Info ( __func__, FACILITY_RUN, abls_pool->name, LOG_INFO, "Starting pool with '%u' threads and unlimited queue", abls_pool->max_threads ); }
     else
      { Info ( __func__, FACILITY_RUN, abls_pool->name, LOG_INFO, "Starting pool with '%u' threads and max queued count %d", abls_pool->max_threads, abls_pool->max_queued ); }
@@ -218,7 +240,7 @@ end:
 
     g_mutex_lock ( &abls_pool->push_lock );
     gint unprocessed = g_thread_pool_unprocessed ( abls_pool->g_pool );
-    if (abls_pool->max_queued != -1 && unprocessed > abls_pool->max_queued)
+    if (abls_pool->max_queued != 0 && unprocessed >= abls_pool->max_queued)
      { Info ( __func__, FACILITY_RUN, abls_pool->name, LOG_WARNING,
               "Queue is full: %d unprocessed tasks, max queued count is %d", unprocessed, abls_pool->max_queued );
        g_mutex_unlock ( &abls_pool->push_lock );
@@ -234,6 +256,15 @@ end:
        return(FALSE);
      }
     return(TRUE);
+  }
+/******************************************************************************************************************************/
+/* Run_pool_unprocessed: Renvoie le nombre de taches en attente de traitement dans le pool                                    */
+/* Entree: abls_pool - pool initialise par Run_thread_pool_init                                                               */
+/* Sortie: nombre de taches non encore traitees                                                                              */
+/******************************************************************************************************************************/
+ gint Run_thread_pool_unprocessed ( struct ABLS_RUN_POOL *abls_pool )
+  { if (!abls_pool) { Info ( __func__, FACILITY_RUN, NULL, LOG_ERR, "Pool is NULL" ); return(0); }
+    return( g_thread_pool_unprocessed ( abls_pool->g_pool ) );
   }
 /******************************************************************************************************************************/
 /* Run_thread_pool_end: Termine et libere les ressources du pool de threads                                                   */
