@@ -318,7 +318,7 @@
     JsonArray *array = Json_get_array ( RootNode, array_name );
     if (!array) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Array is NULL for '%s'", array_name ); return; }
 
-    struct ABLS_RUN_POOL *pool = Run_thread_pool_init ( "json_array_by_thread", fonction, fonction_data, max_threads );
+    struct ABLS_RUN_POOL *pool = Run_thread_pool_init ( "json_array_by_thread", fonction, fonction_data, max_threads, -1 );
     if (!pool) { Info ( __func__, FACILITY_JSON, NULL, LOG_ERR, "Unable to allocate memory for threads" ); return; }
     Json_foreach_array_element ( RootNode, array_name, Json_foreach_array_element_by_thread_start_one, pool );
     Run_thread_pool_end ( pool, TRUE );
