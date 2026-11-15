@@ -174,47 +174,66 @@ end:
 /*         pool_fonction - fonction a executer pour chaque tache (GFunc)                                                      */
 /*         pool_data     - donnees utilisateur transmises a chaque appel de pool_fonction                                     */
 /*         max_threads   - nombre maximum de threads dans le pool                                                             */
+/*         max_queued    - nombre maximum de taches en attente (-1 pour illimite)                                             */
 /* Sortie: pointeur sur ABLS_RUN_POOL si succes, NULL si erreur                                                               */
 /******************************************************************************************************************************/
- struct ABLS_RUN_POOL *Run_thread_pool_init ( gchar *name, GFunc pool_fonction, gpointer pool_data, guint max_threads )
+ struct ABLS_RUN_POOL *Run_thread_pool_init ( gchar *name, GFunc pool_fonction, gpointer pool_data, guint max_threads, gint max_queued )
   { if (!name) name = "New_pool";
     if (!pool_fonction) { Info ( __func__, FACILITY_RUN, name, LOG_ERR, "Function is NULL" ); return(NULL); }
+    if (max_threads < 1) max_threads = 1;
+    if (max_queued < -1) max_queued  = -1;
 
     struct ABLS_RUN_POOL *abls_pool = g_try_malloc0 ( sizeof (struct ABLS_RUN_POOL) );
     if (!abls_pool) { Info ( __func__, FACILITY_RUN, name, LOG_ERR, "Unable to allocate memory for abls_pool" ); return(NULL); }
 
-    abls_pool->g_pool = g_thread_pool_new ( pool_fonction, pool_data, max_threads, TRUE, NULL );
+    g_mutex_init ( &abls_pool->push_lock );
+    GError *error = NULL;
+    abls_pool->g_pool = g_thread_pool_new ( pool_fonction, pool_data, max_threads, FALSE, &error );
     if (!abls_pool->g_pool)
-     { Info ( __func__, FACILITY_RUN, name, LOG_ERR, "Unable to allocate memory for abls_pool->g_pool" );
+     { Info ( __func__, FACILITY_RUN, name, LOG_ERR, "g_thread_pool_new failed: %s", error ? error->message : "unknown error" );
+       if (error) g_error_free ( error );
+       g_mutex_clear ( &abls_pool->push_lock );
        g_free(abls_pool);
        return(NULL);
      }
     g_snprintf ( abls_pool->name, sizeof(abls_pool->name), "%s", name );
     abls_pool->max_threads    = max_threads;
+    abls_pool->max_queued     = max_queued;
     abls_pool->pool_fonction  = pool_fonction;
     abls_pool->pool_data      = pool_data;
-    Info ( __func__, FACILITY_RUN, abls_pool->name, LOG_INFO, "Starting pool with '%d' threads", abls_pool->max_threads );
+    if (max_queued == -1)
+     { Info ( __func__, FACILITY_RUN, abls_pool->name, LOG_INFO, "Starting pool with '%u' threads and unlimited queue", abls_pool->max_threads ); }
+    else
+     { Info ( __func__, FACILITY_RUN, abls_pool->name, LOG_INFO, "Starting pool with '%u' threads and max queued count %d", abls_pool->max_threads, abls_pool->max_queued ); }
     return(abls_pool);
   }
 /******************************************************************************************************************************/
 /* Run_thread_pool_push: Ajoute une tache au pool de threads pour execution                                                   */
 /* Entree: abls_pool     - pool initialise par Run_thread_pool_init                                                           */
 /*         fonction_data - donnees a traiter par la fonction du pool                                                          */
-/* Sortie: neant                                                                                                              */
+/* Sortie: TRUE si la tache a ete ajoutee, FALSE si la queue est pleine ou en cas d'erreur                                     */
 /******************************************************************************************************************************/
- void Run_thread_pool_push ( struct ABLS_RUN_POOL *abls_pool, gpointer fonction_data )
-  { if (!abls_pool) { Info ( __func__, FACILITY_RUN, NULL, LOG_ERR, "Pool is NULL" ); return; }
-    if (!g_thread_pool_push ( abls_pool->g_pool, fonction_data, NULL ))
-     { Info ( __func__, FACILITY_RUN, abls_pool->name, LOG_ERR, "Unable to push data to pool" ); }
-  }
-/******************************************************************************************************************************/
-/* Run_pool_unprocessed: Renvoie le nombre de taches en attente de traitement dans le pool                                    */
-/* Entree: abls_pool - pool initialise par Run_thread_pool_init                                                               */
-/* Sortie: nombre de taches non encore traitees                                                                              */
-/******************************************************************************************************************************/
- gint Run_thread_pool_unprocessed ( struct ABLS_RUN_POOL *abls_pool )
-  { if (!abls_pool) { Info ( __func__, FACILITY_RUN, NULL, LOG_ERR, "Pool is NULL" ); return(0); }
-    return( g_thread_pool_unprocessed ( abls_pool->g_pool ) );
+ gboolean Run_thread_pool_push ( struct ABLS_RUN_POOL *abls_pool, gpointer fonction_data )
+  { if (!abls_pool) { Info ( __func__, FACILITY_RUN, NULL, LOG_ERR, "Pool is NULL" ); return(FALSE); }
+
+    g_mutex_lock ( &abls_pool->push_lock );
+    gint unprocessed = g_thread_pool_unprocessed ( abls_pool->g_pool );
+    if (abls_pool->max_queued != -1 && unprocessed > abls_pool->max_queued)
+     { Info ( __func__, FACILITY_RUN, abls_pool->name, LOG_WARNING,
+              "Queue is full: %d unprocessed tasks, max queued count is %d", unprocessed, abls_pool->max_queued );
+       g_mutex_unlock ( &abls_pool->push_lock );
+       return(FALSE);
+     }
+
+    GError *error = NULL;
+    gboolean pushed = g_thread_pool_push ( abls_pool->g_pool, fonction_data, &error );
+    g_mutex_unlock ( &abls_pool->push_lock );
+    if (!pushed)
+     { Info ( __func__, FACILITY_RUN, abls_pool->name, LOG_ERR, "g_thread_pool_push failed: %s", error ? error->message : "unknown error" );
+       if (error) g_error_free ( error );
+       return(FALSE);
+     }
+    return(TRUE);
   }
 /******************************************************************************************************************************/
 /* Run_thread_pool_end: Termine et libere les ressources du pool de threads                                                   */
@@ -226,6 +245,7 @@ end:
   { if (!abls_pool) { Info ( __func__, FACILITY_RUN, NULL, LOG_ERR, "Pool is NULL" ); return; }
     g_thread_pool_free ( abls_pool->g_pool, FALSE, wait_for_completion );
     Info ( __func__, FACILITY_RUN, abls_pool->name, LOG_INFO, "Pool ended" );
+    g_mutex_clear ( &abls_pool->push_lock );
     g_free ( abls_pool );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
