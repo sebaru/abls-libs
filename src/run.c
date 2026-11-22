@@ -178,7 +178,7 @@ end:
 /*         max_threads   - nombre maximum de threads dans le pool                                                             */
 /*         max_queued    - nombre maximum de taches en attente (0 pour illimite)                                              */
 /*                       Les workers exclusifs héritent du masque SIGALRM de l'appelant lors de leur création.                */
-/* Sortie: pointeur sur ABLS_RUN_POOL si succes, NULL si erreur                                                               */
+/* Sortie: pointeur sur ABLS_RUN_POOL si tous les workers ont demarre, NULL sinon                                             */
 /******************************************************************************************************************************/
  struct ABLS_RUN_POOL *Run_thread_pool_init ( gchar *name, GFunc pool_fonction, gpointer pool_data, guint max_threads, gint max_queued )
   { if (!name) name = "New_pool";
@@ -189,6 +189,7 @@ end:
     struct ABLS_RUN_POOL *abls_pool = g_try_malloc0 ( sizeof (struct ABLS_RUN_POOL) );
     if (!abls_pool) { Info ( __func__, FACILITY_RUN, name, LOG_ERR, "Unable to allocate memory for abls_pool" ); return(NULL); }
 
+    g_snprintf ( abls_pool->name, sizeof(abls_pool->name), "%s", name );
     g_mutex_init ( &abls_pool->push_lock );
     GError *error = NULL;
     sigset_t alrm_set, old_set;
@@ -206,7 +207,6 @@ end:
     gint restore_error = pthread_sigmask ( SIG_SETMASK, &old_set, NULL );
     if (restore_error)
      { Info ( __func__, FACILITY_RUN, name, LOG_ERR, "Unable to restore signal mask: %s", g_strerror ( restore_error ) );
-       if (abls_pool->g_pool) g_thread_pool_free ( abls_pool->g_pool, FALSE, TRUE );
        if (error) g_error_free ( error );
        Run_thread_pool_end ( abls_pool, TRUE );
        return(NULL);
@@ -218,7 +218,16 @@ end:
        Run_thread_pool_end ( abls_pool, TRUE );
        return(NULL);
      }
-    g_snprintf ( abls_pool->name, sizeof(abls_pool->name), "%s", name );
+
+    /* Avant GLib 2.86, un pool exclusif peut être renvoyé alors que seuls certains workers ont démarré. */
+    guint started = g_thread_pool_get_num_threads ( abls_pool->g_pool );
+    if (error || started != max_threads)
+     { Info ( __func__, FACILITY_RUN, name, LOG_ERR, "Only %u of %u workers started: %s",
+              started, max_threads, error ? error->message : "unknown error" );
+       if (error) g_error_free ( error );
+       Run_thread_pool_end ( abls_pool, TRUE );
+       return(NULL);
+     }
     abls_pool->max_threads    = max_threads;
     abls_pool->max_queued     = max_queued;
     abls_pool->pool_fonction  = pool_fonction;
@@ -274,8 +283,10 @@ end:
 /******************************************************************************************************************************/
  void Run_thread_pool_end ( struct ABLS_RUN_POOL *abls_pool, gboolean wait_for_completion )
   { if (!abls_pool) { Info ( __func__, FACILITY_RUN, NULL, LOG_ERR, "Pool is NULL" ); return; }
-    g_thread_pool_free ( abls_pool->g_pool, FALSE, wait_for_completion );
-    Info ( __func__, FACILITY_RUN, abls_pool->name, LOG_INFO, "Pool ended" );
+    if (abls_pool->g_pool)
+     { g_thread_pool_free ( abls_pool->g_pool, FALSE, wait_for_completion );
+       Info ( __func__, FACILITY_RUN, abls_pool->name, LOG_INFO, "Pool ended" );
+     }
     g_mutex_clear ( &abls_pool->push_lock );
     g_free ( abls_pool );
   }
