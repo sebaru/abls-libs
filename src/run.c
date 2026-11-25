@@ -242,7 +242,7 @@ end:
 /* Run_thread_pool_push: Ajoute une tache au pool de threads pour execution                                                   */
 /* Entree: abls_pool     - pool initialise par Run_thread_pool_init                                                           */
 /*         fonction_data - donnees a traiter par la fonction du pool                                                          */
-/* Sortie: TRUE si la tache a ete ajoutee, FALSE si la queue est pleine ou en cas d'erreur                                     */
+/* Sortie: TRUE si la tache a ete mise en file, FALSE si elle a ete refusee                                                    */
 /******************************************************************************************************************************/
  gboolean Run_thread_pool_push ( struct ABLS_RUN_POOL *abls_pool, gpointer fonction_data )
   { if (!abls_pool) { Info ( __func__, FACILITY_RUN, NULL, LOG_ERR, "Pool is NULL" ); return(FALSE); }
@@ -261,8 +261,9 @@ end:
     g_mutex_unlock ( &abls_pool->push_lock );
     if (!pushed)
      { Info ( __func__, FACILITY_RUN, abls_pool->name, LOG_ERR, "g_thread_pool_push failed: %s", error ? error->message : "unknown error" );
+       gboolean queued = ( error != NULL );
        if (error) g_error_free ( error );
-       return(FALSE);
+       return(queued);
      }
     return(TRUE);
   }

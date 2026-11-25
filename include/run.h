@@ -52,6 +52,7 @@
  extern gboolean              Run_thread_detached   ( const gchar *name, GThreadFunc func, gpointer data );
  /* Pool exclusif : ses workers héritent du masque SIGALRM du thread appelant à l'initialisation. */
  extern struct ABLS_RUN_POOL *Run_thread_pool_init  ( gchar *name, GFunc pool_fonction, gpointer pool_data, guint max_threads, gint max_queued );
+ /* TRUE si la tâche a été mise en file (l'appelant transfère alors ses données), FALSE si elle a été refusée. */
  extern gboolean              Run_thread_pool_push  ( struct ABLS_RUN_POOL *abls_pool, gpointer fonction_data );
  extern void                  Run_thread_pool_end   ( struct ABLS_RUN_POOL *abls_pool, gboolean wait_for_completion );
  extern gint                  Run_thread_pool_unprocessed  ( struct ABLS_RUN_POOL *abls_pool );
